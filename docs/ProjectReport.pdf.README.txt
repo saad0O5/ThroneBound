@@ -1,0 +1,10 @@
+This is a placeholder marker for docs/ProjectReport.pdf.
+
+TODO before submission:
+  - Write ProjectReport.pdf covering:
+      1. Design choices (why lane combat, why 3 resources, why these 3 factions, etc.)
+      2. Challenges faced during implementation
+      3. How the UML evolved during coding (compare final class list to the
+         original Thronebound_UML_Class_Diagram.pdf)
+      4. How tasks were divided among the 3 members (see README.md team table)
+  - Delete this placeholder file once ProjectReport.pdf is added to docs/
