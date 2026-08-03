@@ -18,4 +18,6 @@ package cards;
  */
 public class ArcaneCard /* extends Card */ {
     // TODO
+int x;
+
 }
