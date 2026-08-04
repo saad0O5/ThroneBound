@@ -31,15 +31,22 @@ Two players connect over LAN sockets, build a deck from one of three asymmetric 
 ```
 thronebound/
 ├── src/
-│   ├── network/       # GameServer, ClientHandler, GameClient, Message protocol
-│   ├── engine/        # GameState, Lane, TurnManager, CombatResolver, ResourcePool, WinCondition
-│   ├── cards/         # Card & Faction hierarchy, Deck
-│   ├── persistence/   # PlayerProfile, ProfileManager, MatchHistory, UnlockManager
-│   └── gui/            # JavaFX screens (Login, MainMenu, HostJoin, DeckBuilder, Match, Results)
+│   ├── main/java/
+│   │   ├── network/       # GameServer, ClientHandler, GameClient, Message protocol
+│   │   ├── engine/        # GameState, Lane, TurnManager, CombatResolver, ResourcePool, WinCondition
+│   │   ├── cards/         # Card & Faction hierarchy, Deck, Cost
+│   │   ├── persistence/   # PlayerProfile, ProfileManager, MatchHistory, UnlockManager
+│   │   └── gui/           # JavaFX screens (Login, MainMenu, HostJoin, DeckBuilder, Match, Results)
+│   └── test/java/
+│       ├── network/       # MessageTest, NetworkIntegrationTest
+│       ├── engine/        # GameStateTest, LaneTest, ResourcePoolTest, WinConditionTest, ...
+│       ├── cards/         # CardTest, FactionTest, DeckTest, BeastkinCardTest
+│       └── persistence/   # PlayerProfileTest, ProfileManagerTest
 ├── docs/
 │   ├── Thronebound_UML_Class_Diagram.pdf
 │   ├── Card_List.md
 │   └── ProjectReport.pdf
+├── pom.xml
 ├── .gitignore
 └── README.md
 ```
@@ -52,7 +59,38 @@ thronebound/
 | _Member B_ | Game Engine & Cards/Factions |
 | _Member C_ | GUI & Persistence |
 
-## Getting Started
+## Testing (TDD Workflow)
+
+This project follows test-driven development: the test suite in `src/test/java/` was written from the UML class diagram **before** the corresponding logic was implemented. Every class's main-source file has TODO-marked methods that currently throw `UnsupportedOperationException` — this is the intentional starting ("red") state.
+
+**Workflow for each class you implement:**
+1. Open the relevant test file (e.g. `src/test/java/engine/LaneTest.java` for `Lane`)
+2. Run the tests — they'll fail against the `UnsupportedOperationException` stubs
+3. Implement the TODO method(s) in the matching main-source file
+4. Re-run the tests until they pass ("green")
+5. Move to the next class — see `docs/ProjectReport.pdf` (once written) for suggested implementation order
+
+### Running the tests
+
+This project uses Maven and JUnit 5.
+
+```
+mvn test
+```
+
+Requires JDK 17+ and Maven installed locally. GUI classes (`src/main/java/gui/`) are intentionally not part of the automated test suite — JavaFX screens are hard to meaningfully unit test, so verify those manually by running the app once the engine/networking/persistence layers are implemented and wired up.
+
+### Test coverage by module
+
+| Module | Test file(s) | Notes |
+|---|---|---|
+| `engine` | `GameStateTest`, `LaneTest`, `ResourcePoolTest`, `WinConditionTest`, `TurnManagerTest`, `CombatResolverTest` | Includes a concurrency test on `GameState` — see `GameStateTest.concurrentPlayCardsDoNotCorruptState()` |
+| `cards` | `CardTest`, `FactionTest`, `DeckTest`, `BeastkinCardTest` | `FactionTest` expects each faction's card pool to reach 15 cards once populated |
+| `persistence` | `PlayerProfileTest`, `ProfileManagerTest` | Uses JUnit's `@TempDir` so tests never touch real player data |
+| `network` | `MessageTest`, `NetworkIntegrationTest` | `NetworkIntegrationTest` is a real localhost client-server test, not a mock — most useful to run manually as you implement `GameServer`/`GameClient` |
+| `gui` | _(none — verify manually)_ | |
+
+
 
 1. Clone the repository
    ```
