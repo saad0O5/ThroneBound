@@ -12,6 +12,7 @@ import engine.GameState;
  *         (default is a no-op — most Beastkin/Arcane cards don't need one)
  */
 public abstract class Card {
+
     private final String name;
     private final Cost cost;
     private final int attack;
