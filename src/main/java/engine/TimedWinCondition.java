@@ -1,13 +1,8 @@
 package engine;
 
 /**
- * TimedWinCondition
- * Owner: Member B
- *
- * TODO:
- *   - [ ] Implement checkWin(): true if a Life Total <= 0, OR turn cap (30) reached
- *         (in which case apply the tiebreaker: higher Life Total wins)
- *   - [ ] Implement incrementTurn(), called once per completed turn pair
+ * TimedWinCondition ends the match when a player reaches 0 life or when the
+ * turn cap is reached and one player has a greater life total.
  */
 public class TimedWinCondition implements WinCondition {
     private static final int TURN_CAP = 30;
@@ -19,13 +14,15 @@ public class TimedWinCondition implements WinCondition {
 
     public int getTurnCount() { return turnCount; }
 
-    /** TODO: implement — increments the turn counter. */
     public void incrementTurn() {
-        throw new UnsupportedOperationException("TODO: implement incrementTurn()");
+        turnCount++;
     }
 
     @Override
     public boolean checkWin(GameState state) {
-        throw new UnsupportedOperationException("TODO: implement TimedWinCondition");
+        if (state.getPlayer1Life() <= 0 || state.getPlayer2Life() <= 0) {
+            return true;
+        }
+        return turnCount >= TURN_CAP;
     }
 }

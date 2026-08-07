@@ -5,23 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * GameState
- * Owner: Member B (Game Engine)
- *
- * THIS IS THE PROJECT'S CONCURRENCY HOTSPOT — see engine/GameStateTest.java's
- * concurrency test. All mutating methods below are marked synchronized;
- * keep them that way as you implement, and do not add new state-mutating
- * methods without synchronizing them too.
- *
- * Initial state (already implemented, verified by GameStateTest):
- *   - both players start at 25 Life (locked-in project parameter)
- *   - both players have exactly 3 lanes (locked-in project parameter)
- *   - Player 1 goes first
- *
- * TODO:
- *   - [ ] Implement playCard(Card, int laneIndex)
- *   - [ ] Implement endTurn()
- *   - [ ] Implement resolveCombat()
+ * GameState is the central board state for the game. It owns the lanes,
+ * life totals, resources, turn, and graveyard.
  */
 public class GameState {
     public static final int STARTING_LIFE = 25;
@@ -31,6 +16,9 @@ public class GameState {
     private int player2Life;
     private final List<Lane> lanesP1;
     private final List<Lane> lanesP2;
+    private final List<Card> graveyard;
+    private final ResourcePool resourcesP1;
+    private final ResourcePool resourcesP2;
     private Player currentTurn;
 
     public GameState() {
@@ -38,6 +26,9 @@ public class GameState {
         this.player2Life = STARTING_LIFE;
         this.lanesP1 = new ArrayList<>();
         this.lanesP2 = new ArrayList<>();
+        this.graveyard = new ArrayList<>();
+        this.resourcesP1 = new ResourcePool(5, 5, 5);
+        this.resourcesP2 = new ResourcePool(5, 5, 5);
         for (int i = 0; i < LANES_PER_PLAYER; i++) {
             lanesP1.add(new Lane());
             lanesP2.add(new Lane());
@@ -49,20 +40,65 @@ public class GameState {
     public int getPlayer2Life() { return player2Life; }
     public List<Lane> getLanesP1() { return lanesP1; }
     public List<Lane> getLanesP2() { return lanesP2; }
+    public List<Card> getGraveyard() { return graveyard; }
+    public ResourcePool getResourcesP1() { return resourcesP1; }
+    public ResourcePool getResourcesP2() { return resourcesP2; }
     public Player getCurrentTurn() { return currentTurn; }
 
-    /** TODO: implement — validate cost via ResourcePool, place card, deduct cost. */
     public synchronized void playCard(Card card, int laneIndex) {
-        throw new UnsupportedOperationException("TODO: implement playCard()");
+        if (card == null) {
+            throw new IllegalArgumentException("Card cannot be null");
+        }
+
+        ResourcePool currentResources = currentTurn == Player.PLAYER1 ? resourcesP1 : resourcesP2;
+        if (!currentResources.canAfford(card.getCost())) {
+            throw new IllegalStateException("Player cannot afford this card");
+        }
+
+        if (!card.isSpell()) {
+            if (laneIndex < 0 || laneIndex >= LANES_PER_PLAYER) {
+                throw new IllegalArgumentException("Lane index out of range");
+            }
+            List<Lane> targetLanes = currentTurn == Player.PLAYER1 ? lanesP1 : lanesP2;
+            Lane targetLane = targetLanes.get(laneIndex);
+            if (!targetLane.isEmpty()) {
+                throw new IllegalStateException("Lane is already occupied");
+            }
+            targetLane.placeCard(card);
+            card.setLane(targetLane);
+        }
+
+        card.setOwner(currentTurn);
+        currentResources.deduct(card.getCost());
+        card.play(this);
     }
 
-    /** TODO: implement — hand off to TurnManager.nextTurn(). */
     public synchronized void endTurn() {
-        throw new UnsupportedOperationException("TODO: implement endTurn()");
+        if (currentTurn == Player.PLAYER1) {
+            currentTurn = Player.PLAYER2;
+            resourcesP2.accumulate();
+        } else {
+            currentTurn = Player.PLAYER1;
+            resourcesP1.accumulate();
+        }
     }
 
-    /** TODO: implement — delegate to CombatResolver. */
     public synchronized void resolveCombat() {
-        throw new UnsupportedOperationException("TODO: implement resolveCombat()");
+        CombatResolver resolver = new CombatResolver();
+        for (int i = 0; i < LANES_PER_PLAYER; i++) {
+            Lane laneP1 = lanesP1.get(i);
+            Lane laneP2 = lanesP2.get(i);
+            Card attacker = laneP1.getOccupant();
+            Card defender = laneP2.getOccupant();
+
+            if (attacker != null && defender != null) {
+                resolver.resolveAttack(attacker, defender, this);
+                if (defender.getHealth() <= 0) {
+                    laneP2.removeCard();
+                    defender.setLane(null);
+                    graveyard.add(defender);
+                }
+            }
+        }
     }
 }

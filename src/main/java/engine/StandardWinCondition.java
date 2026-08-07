@@ -1,15 +1,11 @@
 package engine;
 
 /**
- * StandardWinCondition
- * Owner: Member B
- *
- * TODO:
- *   - [ ] Implement checkWin(): true if either player's Life Total <= 0
+ * StandardWinCondition ends the match when either player reaches 0 or less life.
  */
 public class StandardWinCondition implements WinCondition {
     @Override
     public boolean checkWin(GameState state) {
-        throw new UnsupportedOperationException("TODO: implement StandardWinCondition");
+        return state.getPlayer1Life() <= 0 || state.getPlayer2Life() <= 0;
     }
 }

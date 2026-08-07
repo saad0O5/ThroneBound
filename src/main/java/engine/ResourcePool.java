@@ -3,13 +3,7 @@ package engine;
 import cards.Cost;
 
 /**
- * ResourcePool
- * Owner: Member B (Game Engine)
- *
- * TODO:
- *   - [ ] Implement canAfford(Cost)
- *   - [ ] Implement deduct(Cost)
- *   - [ ] Implement the per-turn accumulation logic, called from TurnManager.nextTurn()
+ * ResourcePool tracks the resources available to a player.
  */
 public class ResourcePool {
     private int essence;
@@ -26,13 +20,21 @@ public class ResourcePool {
     public int getMana() { return mana; }
     public int getSoul() { return soul; }
 
-    /** TODO: implement — true if this pool has at least `cost`'s amount of each resource. */
     public boolean canAfford(Cost cost) {
-        throw new UnsupportedOperationException("TODO: implement canAfford()");
+        return essence >= cost.getEssence()
+                && mana >= cost.getMana()
+                && soul >= cost.getSoul();
     }
 
-    /** TODO: implement — subtract cost's amounts; should only be called after canAfford() passes. */
     public void deduct(Cost cost) {
-        throw new UnsupportedOperationException("TODO: implement deduct()");
+        essence -= cost.getEssence();
+        mana -= cost.getMana();
+        soul -= cost.getSoul();
+    }
+
+    public void accumulate() {
+        essence += 1;
+        mana += 1;
+        soul += 1;
     }
 }

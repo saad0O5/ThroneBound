@@ -3,17 +3,24 @@ package engine;
 import cards.Card;
 
 /**
- * CombatResolver
- * Owner: Member B (Game Engine)
- *
- * TODO:
- *   - [ ] Implement resolveAttack(): apply attacker's Attack as damage to
- *         defender's Health (decide: simultaneous counter-damage or not),
- *         and trigger onDeath() for any card that reaches 0 Health
+ * CombatResolver applies one-sided combat damage from an attacker into a defender.
  */
 public class CombatResolver {
-    /** TODO: implement. */
     public void resolveAttack(Card attacker, Card defender) {
-        throw new UnsupportedOperationException("TODO: implement resolveAttack()");
+        resolveAttack(attacker, defender, null);
+    }
+
+    public void resolveAttack(Card attacker, Card defender, GameState state) {
+        if (attacker == null || defender == null) {
+            return;
+        }
+
+        int incomingDamage = attacker.getAttack();
+        int updatedHealth = defender.getHealth() - incomingDamage;
+        defender.setHealth(updatedHealth);
+
+        if (updatedHealth <= 0 && state != null) {
+            defender.onDeath(state);
+        }
     }
 }

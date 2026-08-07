@@ -3,12 +3,7 @@ package engine;
 import cards.Card;
 
 /**
- * Lane
- * Owner: Member B (Game Engine)
- *
- * TODO:
- *   - [ ] Implement isEmpty()
- *   - [ ] Implement placeCard(Card) / removeCard()
+ * Lane represents a single board slot that can hold at most one card.
  */
 public class Lane {
     private Card occupant;
@@ -19,18 +14,21 @@ public class Lane {
 
     public Card getOccupant() { return occupant; }
 
-    /** TODO: implement. */
     public boolean isEmpty() {
-        throw new UnsupportedOperationException("TODO: implement isEmpty()");
+        return occupant == null;
     }
 
-    /** TODO: implement — should reject placing into a non-empty lane. */
     public void placeCard(Card card) {
-        throw new UnsupportedOperationException("TODO: implement placeCard()");
+        if (card == null) {
+            throw new IllegalArgumentException("Cannot place null card in a lane");
+        }
+        if (!isEmpty()) {
+            throw new IllegalStateException("Lane is already occupied");
+        }
+        this.occupant = card;
     }
 
-    /** TODO: implement — clears the occupant. */
     public void removeCard() {
-        throw new UnsupportedOperationException("TODO: implement removeCard()");
+        this.occupant = null;
     }
 }

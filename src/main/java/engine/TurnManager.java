@@ -1,13 +1,7 @@
 package engine;
 
 /**
- * TurnManager
- * Owner: Member B (Game Engine)
- *
- * TODO:
- *   - [ ] Implement nextTurn(): switch currentTurn on GameState, accumulate
- *         resources for the newly active player
- *   - [ ] Implement checkWinCondition(): delegate to winCondition.checkWin()
+ * TurnManager advances turn order and delegates win checks to the active win condition.
  */
 public class TurnManager {
     private final WinCondition winCondition;
@@ -18,13 +12,14 @@ public class TurnManager {
 
     public WinCondition getWinCondition() { return winCondition; }
 
-    /** TODO: implement. */
     public void nextTurn(GameState state) {
-        throw new UnsupportedOperationException("TODO: implement nextTurn()");
+        state.endTurn();
+        if (winCondition instanceof TimedWinCondition timedWinCondition) {
+            timedWinCondition.incrementTurn();
+        }
     }
 
-    /** TODO: implement. */
     public boolean checkWinCondition(GameState state) {
-        throw new UnsupportedOperationException("TODO: implement checkWinCondition()");
+        return winCondition.checkWin(state);
     }
 }
