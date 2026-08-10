@@ -23,30 +23,37 @@ public class LoginScreen extends VBox {
         this.profileManager = profileManager;
 
         setAlignment(Pos.CENTER);
-        setSpacing(12);
-        setPadding(new Insets(24));
+        setSpacing(14);
+        setPadding(new Insets(32));
+        getStyleClass().add("screen-root");
 
-        Label title = new Label("Thronebound Login");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        Label title = new Label("Thronebound");
+        title.getStyleClass().add("title-label");
+
+        Label subtitle = new Label("Enter your credentials to begin your duel");
+        subtitle.getStyleClass().add("subtitle-label");
 
         usernameField.setPromptText("Username");
+        usernameField.setMaxWidth(320);
         passwordField.setPromptText("Password");
+        passwordField.setMaxWidth(320);
 
         Button loginButton = new Button("Login");
         Button registerButton = new Button("Register");
+        loginButton.getStyleClass().add("action-button");
+        registerButton.getStyleClass().add("secondary-button");
 
         loginButton.setOnAction(event -> handleLogin());
         registerButton.setOnAction(event -> handleRegister());
 
         statusLabel.setWrapText(true);
-        statusLabel.setStyle("-fx-text-fill: #b22222;");
+        statusLabel.getStyleClass().add("status-label");
 
-        getChildren().addAll(
-                title,
-                usernameField,
-                passwordField,
-                new VBox(6, loginButton, registerButton, statusLabel)
-        );
+        VBox formBox = new VBox(10, usernameField, passwordField, loginButton, registerButton, statusLabel);
+        formBox.setAlignment(Pos.CENTER);
+        formBox.getStyleClass().add("panel");
+        formBox.setMaxWidth(380);
+        getChildren().addAll(title, subtitle, formBox);
     }
 
     private void handleLogin() {

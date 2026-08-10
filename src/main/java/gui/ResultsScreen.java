@@ -13,11 +13,12 @@ import persistence.UnlockManager;
 public class ResultsScreen extends VBox {
     public ResultsScreen(ThroneBoundApp app, PlayerProfile profile, boolean won) {
         setAlignment(Pos.CENTER);
-        setSpacing(12);
-        setPadding(new Insets(24));
+        setSpacing(14);
+        setPadding(new Insets(32));
+        getStyleClass().add("screen-root");
 
         Label title = new Label(won ? "Victory!" : "Defeat");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("title-label");
 
         String resultText = won ? "You won the match." : "You lost the match.";
         Label summary = new Label(resultText);
@@ -33,7 +34,14 @@ public class ResultsScreen extends VBox {
 
         Button backButton = new Button("Back to Menu");
         backButton.setOnAction(event -> app.showMainMenu(profile));
+        backButton.getStyleClass().add("action-button");
+        UiHelpers.applyHoverEffect(backButton);
 
-        getChildren().addAll(title, summary, unlockLabel, backButton);
+        VBox resultPanel = new VBox(10, title, summary, unlockLabel, backButton);
+        resultPanel.setAlignment(Pos.CENTER);
+        resultPanel.getStyleClass().add("panel");
+        resultPanel.setMaxWidth(420);
+
+        getChildren().add(resultPanel);
     }
 }

@@ -24,10 +24,14 @@ public class HostJoinScreen extends VBox {
 
         setAlignment(Pos.CENTER);
         setSpacing(12);
-        setPadding(new Insets(24));
+        setPadding(new Insets(32));
+        getStyleClass().add("screen-root");
 
         Label title = new Label("Host or Join a Match");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("title-label");
+
+        Label subtitle = new Label("Gather allies or face your rival across the network");
+        subtitle.getStyleClass().add("subtitle-label");
 
         Button hostButton = new Button("Host Match");
         Button joinButton = new Button("Join Match");
@@ -36,17 +40,19 @@ public class HostJoinScreen extends VBox {
         hostButton.setOnAction(event -> hostMatch());
         joinButton.setOnAction(event -> joinMatch());
         backButton.setOnAction(event -> app.showMainMenu(profile));
+        hostButton.getStyleClass().add("action-button");
+        joinButton.getStyleClass().add("secondary-button");
+        backButton.getStyleClass().add("secondary-button");
 
-        getChildren().addAll(
-                title,
-                new Label("Host IP / Port"),
-                hostField,
-                portField,
-                hostButton,
-                joinButton,
-                backButton,
-                statusLabel
-        );
+        hostField.setMaxWidth(320);
+        portField.setMaxWidth(320);
+        statusLabel.getStyleClass().add("status-label");
+
+        VBox formBox = new VBox(10, title, subtitle, new Label("Host IP / Port"), hostField, portField, hostButton, joinButton, backButton, statusLabel);
+        formBox.setAlignment(Pos.CENTER);
+        formBox.getStyleClass().add("panel");
+        formBox.setMaxWidth(420);
+        getChildren().add(formBox);
     }
 
     private void hostMatch() {

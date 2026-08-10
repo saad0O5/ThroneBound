@@ -115,7 +115,8 @@ public class MatchScreen extends BorderPane implements GameStateObserver {
         HBox topRow = new HBox(20, title, statusLabel);
         topRow.setAlignment(Pos.CENTER_LEFT);
         VBox panel = new VBox(8, topRow);
-        panel.setPadding(new Insets(0, 0, 12, 0));
+        panel.getStyleClass().add("panel");
+        panel.setPadding(new Insets(12));
         return panel;
     }
 
@@ -131,6 +132,7 @@ public class MatchScreen extends BorderPane implements GameStateObserver {
         }
         Button endTurnButton = new Button("End Turn");
         endTurnButton.setOnAction(event -> endTurn());
+        handPanel.getStyleClass().add("panel");
         handPanel.getChildren().addAll(handLabel, handButtons, endTurnButton);
         return new HBox(20, handPanel);
     }
@@ -157,12 +159,12 @@ public class MatchScreen extends BorderPane implements GameStateObserver {
 
     private VBox buildLanePanel(int laneIndex, Card occupant, boolean playerSide) {
         Label title = new Label("Lane " + (laneIndex + 1));
+        title.getStyleClass().add("board-title");
         Label occupantLabel = new Label(occupant == null ? "Empty" : occupant.getName());
         Button actionButton = new Button(playerSide ? "Play Here" : "Watch");
         actionButton.setOnAction(event -> playSelectedCard(laneIndex));
         VBox pane = new VBox(6, title, occupantLabel, actionButton);
-        pane.setPadding(new Insets(8));
-        pane.setStyle("-fx-border-color: lightgray; -fx-border-radius: 4; -fx-padding: 8;");
+        pane.getStyleClass().add("lane-panel");
         return pane;
     }
 

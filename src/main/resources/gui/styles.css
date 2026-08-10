@@ -1,0 +1,108 @@
+.root {
+    -fx-background-color: linear-gradient(to bottom, #120813, #2b1236 55%, #0f0711);
+    -fx-font-family: "Segoe UI";
+    -fx-text-fill: #f6eacc;
+}
+
+.screen-root {
+    -fx-padding: 32;
+    -fx-alignment: center;
+}
+
+.title-label {
+    -fx-font-size: 31px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd87a;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.72), 10, 0.3, 0, 2);
+}
+
+.subtitle-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #d8c7a4;
+}
+
+.info-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #f4dca7;
+}
+
+.status-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffcf6e;
+}
+
+.panel {
+    -fx-background-color: rgba(28, 16, 35, 0.86);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(158, 112, 42, 0.45);
+    -fx-border-radius: 14;
+    -fx-border-width: 1.2;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 10, 0.25, 0, 3);
+}
+
+.text-field, .button {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+.text-field {
+    -fx-background-color: #24172f;
+    -fx-border-color: #7e5b35;
+    -fx-text-fill: #fff3d5;
+    -fx-prompt-text-fill: #9b8d72;
+    -fx-padding: 10 12;
+}
+
+.button {
+    -fx-padding: 10 18;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.button:hover {
+    -fx-opacity: 0.96;
+}
+
+.action-button {
+    -fx-background-color: linear-gradient(to bottom, #c48a2d, #8d5618);
+    -fx-text-fill: white;
+}
+
+.secondary-button {
+    -fx-background-color: linear-gradient(to bottom, #3d2c4d, #231731);
+    -fx-text-fill: #f2e0b2;
+}
+
+.danger-button {
+    -fx-background-color: linear-gradient(to bottom, #9d2d2d, #671818);
+}
+
+.card-button {
+    -fx-background-color: linear-gradient(to bottom, #2f253b, #1a1224);
+    -fx-text-fill: #f5e7c7;
+    -fx-alignment: center-left;
+    -fx-padding: 10 12;
+    -fx-border-color: rgba(156, 109, 47, 0.4);
+    -fx-border-radius: 8;
+}
+
+.lane-panel {
+    -fx-background-color: rgba(24, 14, 29, 0.88);
+    -fx-border-color: rgba(202, 148, 57, 0.45);
+    -fx-border-radius: 10;
+    -fx-padding: 12;
+    -fx-min-width: 180;
+    -fx-min-height: 120;
+}
+
+.board-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd06d;
+}
+
+.label {
+    -fx-text-fill: #f8e6bf;
+}

@@ -17,11 +17,15 @@ public class MainMenuScreen extends VBox {
         this.profile = profile;
 
         setAlignment(Pos.CENTER);
-        setSpacing(12);
-        setPadding(new Insets(24));
+        setSpacing(14);
+        setPadding(new Insets(32));
+        getStyleClass().add("screen-root");
 
         Label title = new Label("Welcome, " + profile.getUsername());
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("title-label");
+
+        Label subtitle = new Label("Choose your next move in the realm");
+        subtitle.getStyleClass().add("subtitle-label");
 
         int wins = 0;
         int losses = 0;
@@ -35,7 +39,7 @@ public class MainMenuScreen extends VBox {
         }
 
         Label statsLabel = new Label("Wins: " + wins + " | Losses: " + losses);
-        statsLabel.setStyle("-fx-font-size: 14px;");
+        statsLabel.getStyleClass().add("info-label");
 
         Button playButton = new Button("Play");
         Button deckButton = new Button("Deck Builder");
@@ -47,6 +51,15 @@ public class MainMenuScreen extends VBox {
         statsButton.setOnAction(event -> app.showMainMenu(profile));
         exitButton.setOnAction(event -> app.close());
 
-        getChildren().addAll(title, statsLabel, playButton, deckButton, statsButton, exitButton);
+        playButton.getStyleClass().add("action-button");
+        deckButton.getStyleClass().add("secondary-button");
+        statsButton.getStyleClass().add("secondary-button");
+        exitButton.getStyleClass().add("danger-button");
+
+        VBox menuBox = new VBox(10, playButton, deckButton, statsButton, exitButton);
+        menuBox.setAlignment(Pos.CENTER);
+        menuBox.getStyleClass().add("panel");
+        menuBox.setMaxWidth(360);
+        getChildren().addAll(title, subtitle, statsLabel, menuBox);
     }
 }

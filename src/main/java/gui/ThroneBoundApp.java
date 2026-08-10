@@ -4,7 +4,6 @@ import cards.Deck;
 import engine.GameState;
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import network.GameClient;
 import network.GameServer;
@@ -31,28 +30,40 @@ public class ThroneBoundApp extends Application {
     }
 
     public void showLogin() {
-        primaryStage.setScene(new Scene(new LoginScreen(this, profileManager), 900, 650));
+        Scene scene = new Scene(new LoginScreen(this, profileManager), 960, 680);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
     }
 
     public void showMainMenu(PlayerProfile profile) {
-        primaryStage.setScene(new Scene(new MainMenuScreen(this, profile), 900, 650));
+        Scene scene = new Scene(new MainMenuScreen(this, profile), 960, 680);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
     }
 
     public void showHostJoin(PlayerProfile profile) {
-        primaryStage.setScene(new Scene(new HostJoinScreen(this, profile), 900, 650));
+        Scene scene = new Scene(new HostJoinScreen(this, profile), 960, 680);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
     }
 
     public void showDeckBuilder(PlayerProfile profile) {
-        primaryStage.setScene(new Scene(new DeckBuilderScreen(this, profile), 900, 650));
+        Scene scene = new Scene(new DeckBuilderScreen(this, profile), 1100, 760);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
     }
 
     public void showMatch(PlayerProfile profile, Deck deck) {
         MatchScreen screen = new MatchScreen(this, profile, deck);
-        primaryStage.setScene(new Scene(screen, 1200, 800));
+        Scene scene = new Scene(screen, 1280, 860);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
     }
 
     public void showResults(PlayerProfile profile, boolean won) {
-        primaryStage.setScene(new Scene(new ResultsScreen(this, profile, won), 900, 650));
+        Scene scene = new Scene(new ResultsScreen(this, profile, won), 960, 680);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
     }
 
     public void setActiveServer(GameServer server) {

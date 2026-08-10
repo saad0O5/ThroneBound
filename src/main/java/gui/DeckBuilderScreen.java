@@ -33,11 +33,15 @@ public class DeckBuilderScreen extends BorderPane {
         this.profile = profile;
 
         setPadding(new Insets(24));
+        getStyleClass().add("screen-root");
 
-        VBox sidePanel = new VBox(10);
+        VBox sidePanel = new VBox(12);
         sidePanel.setAlignment(Pos.TOP_LEFT);
         Label title = new Label("Build a 25-card Deck");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("title-label");
+
+        Label subtitle = new Label("Select cards from your unlocked pool");
+        subtitle.getStyleClass().add("subtitle-label");
 
         Button beastkinButton = new Button("Beastkin Clans");
         Button arcaneButton = new Button("Arcane Order");
@@ -51,7 +55,17 @@ public class DeckBuilderScreen extends BorderPane {
         readyButton.setOnAction(event -> finishDeck());
         readyButton.setDisable(true);
 
-        sidePanel.getChildren().addAll(title, beastkinButton, arcaneButton, undeadButton, backButton, readyButton, deckStatusLabel);
+        beastkinButton.getStyleClass().add("secondary-button");
+        arcaneButton.getStyleClass().add("secondary-button");
+        undeadButton.getStyleClass().add("secondary-button");
+        backButton.getStyleClass().add("secondary-button");
+        readyButton.getStyleClass().add("action-button");
+
+        sidePanel.getStyleClass().add("panel");
+        sidePanel.getChildren().addAll(title, subtitle, beastkinButton, arcaneButton, undeadButton, backButton, readyButton, deckStatusLabel);
+
+        cardListBox.getStyleClass().add("panel");
+        cardListBox.setMinWidth(360);
 
         setLeft(sidePanel);
         setCenter(cardListBox);
@@ -62,8 +76,17 @@ public class DeckBuilderScreen extends BorderPane {
     private void selectFaction(Faction faction) {
         this.selectedFaction = faction;
         cardListBox.getChildren().clear();
+        cardListBox.setSpacing(8);
+        if (availableCardsForFaction(faction).isEmpty()) {
+            Label emptyLabel = new Label("No unlocked cards for this faction yet.");
+            emptyLabel.getStyleClass().add("info-label");
+            cardListBox.getChildren().add(emptyLabel);
+            return;
+        }
         for (Card card : availableCardsForFaction(faction)) {
             Button cardButton = new Button(card.getName() + "  " + formatCost(card.getCost()));
+            cardButton.getStyleClass().add("card-button");
+            UiHelpers.applyHoverEffect(cardButton);
             cardButton.setOnAction(event -> addCard(card.getName()));
             cardListBox.getChildren().add(cardButton);
         }
