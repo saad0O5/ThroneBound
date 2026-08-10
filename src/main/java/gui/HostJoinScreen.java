@@ -1,24 +1,86 @@
 package gui;
 
-/**
- * HostJoinScreen
- * Owner: Member C (GUI), integrates with Member A's networking classes
- *
- * Responsibility:
- *   - Lets the player either Host a match (starts a GameServer, shows
- *     "waiting for opponent" + connection info, and exposes the win-condition
- *     choice — Standard vs Timed — since match setup is host-only) or Join a
- *     match (enter host IP/port, connect via GameClient).
- *
- * TODO:
- *   - [ ] Build Host/Join tab or toggle layout
- *   - [ ] Host path: start network.GameServer on a background thread, display
- *         local IP/port, add the Standard/Timed WinCondition selector
- *   - [ ] Join path: IP/port input fields, Connect button -> network.GameClient.connect()
- *   - [ ] Handle connection failure with a visible error message
- *   - [ ] On both players ready, transition to a faction/deck select step,
- *         then MatchScreen
- */
-public class HostJoinScreen {
-    // TODO
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import network.GameClient;
+import network.GameServer;
+import persistence.PlayerProfile;
+
+public class HostJoinScreen extends VBox {
+    private final ThroneBoundApp app;
+    private final PlayerProfile profile;
+    private final TextField hostField = new TextField("127.0.0.1");
+    private final TextField portField = new TextField("5000");
+    private final Label statusLabel = new Label("Choose a role to begin.");
+
+    public HostJoinScreen(ThroneBoundApp app, PlayerProfile profile) {
+        this.app = app;
+        this.profile = profile;
+
+        setAlignment(Pos.CENTER);
+        setSpacing(12);
+        setPadding(new Insets(24));
+
+        Label title = new Label("Host or Join a Match");
+        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+
+        Button hostButton = new Button("Host Match");
+        Button joinButton = new Button("Join Match");
+        Button backButton = new Button("Back");
+
+        hostButton.setOnAction(event -> hostMatch());
+        joinButton.setOnAction(event -> joinMatch());
+        backButton.setOnAction(event -> app.showMainMenu(profile));
+
+        getChildren().addAll(
+                title,
+                new Label("Host IP / Port"),
+                hostField,
+                portField,
+                hostButton,
+                joinButton,
+                backButton,
+                statusLabel
+        );
+    }
+
+    private void hostMatch() {
+        try {
+            int port = Integer.parseInt(portField.getText());
+            GameServer server = new GameServer(port);
+            app.setActiveServer(server);
+            Thread serverThread = new Thread(() -> {
+                try {
+                    server.start();
+                } catch (RuntimeException ex) {
+                    Platform.runLater(() -> statusLabel.setText("Host failed: " + ex.getMessage()));
+                }
+            });
+            serverThread.setDaemon(true);
+            serverThread.start();
+            statusLabel.setText("Hosting on port " + port + "... waiting for opponent.");
+            app.showDeckBuilder(profile);
+        } catch (NumberFormatException ex) {
+            statusLabel.setText("Please enter a valid port number.");
+        }
+    }
+
+    private void joinMatch() {
+        try {
+            int port = Integer.parseInt(portField.getText());
+            GameClient client = new GameClient();
+            client.connect(hostField.getText(), port);
+            client.listen();
+            app.setActiveClient(client);
+            statusLabel.setText("Connected to " + hostField.getText() + ":" + port);
+            app.showDeckBuilder(profile);
+        } catch (RuntimeException ex) {
+            statusLabel.setText("Connection failed: " + ex.getMessage());
+        }
+    }
 }
