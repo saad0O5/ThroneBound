@@ -45,6 +45,10 @@ public class GameState {
     public ResourcePool getResourcesP2() { return resourcesP2; }
     public Player getCurrentTurn() { return currentTurn; }
 
+    public synchronized void setPlayer1Life(int life) { this.player1Life = life; }
+    public synchronized void setPlayer2Life(int life) { this.player2Life = life; }
+    public synchronized void setCurrentTurn(Player turn) { this.currentTurn = turn; }
+
     public synchronized void playCard(Card card, int laneIndex) {
         if (card == null) {
             throw new IllegalArgumentException("Card cannot be null");

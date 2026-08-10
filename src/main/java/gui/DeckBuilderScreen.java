@@ -92,8 +92,10 @@ public class DeckBuilderScreen extends BorderPane {
 
     private List<Card> availableCardsForFaction(Faction faction) {
         List<Card> unlocked = new ArrayList<>();
+        List<String> unlockedNames = profile.getUnlockedCards();
+        boolean hasUnlockedCards = !unlockedNames.isEmpty();
         for (Card card : faction.getCardPool()) {
-            if (profile.getUnlockedCards().contains(card.getName())) {
+            if (!hasUnlockedCards || unlockedNames.contains(card.getName())) {
                 unlocked.add(card);
             }
         }

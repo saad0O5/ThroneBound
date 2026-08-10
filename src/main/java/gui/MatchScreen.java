@@ -5,6 +5,7 @@ import cards.Deck;
 import engine.GameState;
 import engine.Player;
 import engine.ResourcePool;
+import engine.StandardWinCondition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,7 +16,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import network.EndTurnMessage;
 import network.GameClient;
+import network.Message;
 import network.PlayCardMessage;
+import network.StateUpdateMessage;
 import persistence.PlayerProfile;
 
 import java.util.ArrayList;
@@ -38,6 +41,9 @@ public class MatchScreen extends BorderPane implements GameStateObserver {
         this.gameClient = app.getActiveClient();
         this.hand = new ArrayList<>(deck.getCards().subList(0, Math.min(5, deck.getCards().size())));
         app.setActiveGameState(this.gameState);
+        if (this.gameClient != null) {
+            this.gameClient.setMessageListener(this::handleNetworkMessage);
+        }
 
         setPadding(new Insets(24));
         setTop(buildTopPanel());
@@ -49,7 +55,58 @@ public class MatchScreen extends BorderPane implements GameStateObserver {
 
     @Override
     public void onStateChanged(GameState state) {
-        Platform.runLater(() -> renderBoard(state));
+        Platform.runLater(() -> {
+            renderBoard(state);
+            if (new StandardWinCondition().checkWin(state)) {
+                boolean localWon = state.getPlayer1Life() > 0 && state.getPlayer2Life() <= 0;
+                app.showResults(profile, localWon);
+            }
+        });
+    }
+
+    private void handleNetworkMessage(Message message) {
+        if (message instanceof StateUpdateMessage updateMessage) {
+            applyStatePayload(updateMessage.getStatePayload());
+        }
+    }
+
+    private void applyStatePayload(String payload) {
+        try {
+            int player1Life = extractInt(payload, "player1Life");
+            int player2Life = extractInt(payload, "player2Life");
+            String turnName = extractString(payload, "currentTurn");
+            gameState.setPlayer1Life(player1Life);
+            gameState.setPlayer2Life(player2Life);
+            gameState.setCurrentTurn(Player.valueOf(turnName));
+            onStateChanged(gameState);
+        } catch (RuntimeException ex) {
+            statusLabel.setText("Received an incomplete game update.");
+        }
+    }
+
+    private int extractInt(String payload, String key) {
+        String marker = String.format("\"%s\":", key);
+        int start = payload.indexOf(marker);
+        if (start < 0) {
+            throw new IllegalArgumentException("Missing key: " + key);
+        }
+        int valueStart = start + marker.length();
+        int valueEnd = payload.indexOf(',', valueStart);
+        if (valueEnd < 0) {
+            valueEnd = payload.indexOf('}', valueStart);
+        }
+        return Integer.parseInt(payload.substring(valueStart, valueEnd).trim());
+    }
+
+    private String extractString(String payload, String key) {
+        String marker = String.format("\"%s\":\"", key);
+        int start = payload.indexOf(marker);
+        if (start < 0) {
+            throw new IllegalArgumentException("Missing key: " + key);
+        }
+        int valueStart = start + marker.length();
+        int valueEnd = payload.indexOf('"', valueStart);
+        return payload.substring(valueStart, valueEnd);
     }
 
     private VBox buildTopPanel() {
