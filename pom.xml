@@ -14,35 +14,24 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.2</junit.version>
+        <javafx.version>21.0.2</javafx.version>
     </properties>
-
-    <!--
-      TODO (Member C or whoever sets up persistence first):
-        Add a JSON library dependency here once you pick one, e.g. Gson:
-
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-        </dependency>
-
-      TODO (whoever sets up the GUI):
-        JavaFX is not bundled with the JDK from version 11+, so you'll need to
-        add the JavaFX dependencies (org.openjfx:javafx-controls etc.) matching
-        your JDK version, plus the javafx-maven-plugin to run the app. Not
-        required for running the test suite in this file.
-    -->
 
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>21.0.2</version>
+            <version>${javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>
-            <version>21.0.2</version>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -65,6 +54,7 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>gui.ThroneBoundApp</mainClass>
+                    <modulePath>${java.home}/lib</modulePath>
                 </configuration>
             </plugin>
         </plugins>

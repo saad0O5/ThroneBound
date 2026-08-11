@@ -36,4 +36,8 @@ public class PlayerProfile {
         }
         savedDecks.add(deck);
     }
+
+    public void addMatchRecord(MatchRecord record) {
+        matchHistory.addRecord(record);
+    }
 }

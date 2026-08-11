@@ -1,19 +1,26 @@
 package persistence;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileManager {
     private final String storageDirectory;
+    private final Gson gson;
 
     public ProfileManager(String storageDirectory) {
         this.storageDirectory = storageDirectory;
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
     }
 
     public String getStorageDirectory() { return storageDirectory; }
@@ -41,7 +48,7 @@ public class ProfileManager {
     public void save(PlayerProfile profile) {
         try {
             Files.createDirectories(Path.of(storageDirectory));
-            Files.writeString(profilePath(profile.getUsername()), toJson(profile), StandardCharsets.UTF_8);
+            Files.writeString(profilePath(profile.getUsername()), gson.toJson(toDto(profile)), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to save profile for " + profile.getUsername(), e);
         }
@@ -51,7 +58,8 @@ public class ProfileManager {
         Path file = profilePath(username);
         if (!Files.exists(file)) return null;
         try {
-            return fromJson(Files.readString(file, StandardCharsets.UTF_8));
+            String json = Files.readString(file, StandardCharsets.UTF_8);
+            return fromDto(gson.fromJson(json, ProfileDto.class));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read profile for " + username, e);
         }
@@ -73,29 +81,44 @@ public class ProfileManager {
         }
     }
 
-    // ---- Hand-written JSON (no external libraries) ----
-
-    private static String toJson(PlayerProfile profile) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"username\":\"").append(JsonUtil.escape(profile.getUsername())).append("\",");
-        sb.append("\"passwordHash\":\"").append(JsonUtil.escape(profile.getPasswordHash())).append("\",");
-        sb.append("\"unlockedCards\":[");
-        List<String> cards = profile.getUnlockedCards();
-        for (int i = 0; i < cards.size(); i++) {
-            if (i > 0) sb.append(",");
-            sb.append("\"").append(JsonUtil.escape(cards.get(i))).append("\"");
+    private ProfileDto toDto(PlayerProfile profile) {
+        ProfileDto dto = new ProfileDto();
+        dto.username = profile.getUsername();
+        dto.passwordHash = profile.getPasswordHash();
+        dto.unlockedCards = new ArrayList<>(profile.getUnlockedCards());
+        dto.matchHistory = new ArrayList<>(profile.getMatchHistory().getRecords());
+        dto.savedDecks = new ArrayList<>();
+        for (cards.Deck deck : profile.getSavedDecks()) {
+            dto.savedDecks.add(new ArrayList<>(deck.getCardNames()));
         }
-        sb.append("]}");
-        return sb.toString();
+        dto.version = 1;
+        return dto;
     }
 
-    private static PlayerProfile fromJson(String json) {
-        String username = JsonUtil.unescape(JsonUtil.extractRawField(json, "username"));
-        String passwordHash = JsonUtil.unescape(JsonUtil.extractRawField(json, "passwordHash"));
-        PlayerProfile profile = new PlayerProfile(username, passwordHash);
-        for (String card : JsonUtil.parseStringArray(JsonUtil.extractRawField(json, "unlockedCards"))) {
-            profile.addUnlockedCard(card);
+    private PlayerProfile fromDto(ProfileDto dto) {
+        PlayerProfile profile = new PlayerProfile(dto.username, dto.passwordHash);
+        if (dto.unlockedCards != null) {
+            profile.getUnlockedCards().addAll(dto.unlockedCards);
+        }
+        if (dto.matchHistory != null) {
+            for (MatchRecord record : dto.matchHistory) {
+                profile.getMatchHistory().addRecord(record);
+            }
+        }
+        if (dto.savedDecks != null) {
+            for (List<String> deckNames : dto.savedDecks) {
+                profile.saveDeck(cards.Deck.fromCardNames(deckNames));
+            }
         }
         return profile;
+    }
+
+    private static class ProfileDto {
+        String username;
+        String passwordHash;
+        List<String> unlockedCards;
+        List<MatchRecord> matchHistory;
+        List<List<String>> savedDecks;
+        int version;
     }
 }

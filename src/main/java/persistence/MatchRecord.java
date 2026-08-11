@@ -7,9 +7,13 @@ import java.time.LocalDateTime;
  * Owner: Member C (GUI & Persistence)
  */
 public class MatchRecord {
-    private final String opponent;
-    private final String result;
-    private final String date;
+    private String opponent;
+    private String result;
+    private String date;
+
+    public MatchRecord() {
+        // Required for JSON deserialization
+    }
 
     public MatchRecord(String opponent, String result, String date) {
         this.opponent = opponent;

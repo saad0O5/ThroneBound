@@ -1,22 +1,17 @@
 package network;
 
+import java.io.Serializable;
+
 /**
- * StateUpdateMessage
- * Owner: Member A
- *
- * TODO:
- *   - [ ] Decide the snapshot payload type (currently a placeholder String —
- *         replace with a real GameState snapshot / DTO once GameState is
- *         serializable, or keep as a JSON string if that's your chosen
- *         wire format)
+ * StateUpdateMessage carries a serialized game state snapshot for clients.
  */
 public class StateUpdateMessage extends Message {
-    private final String statePayload;
+    private final GameStateSnapshot statePayload;
 
-    public StateUpdateMessage(String statePayload) {
+    public StateUpdateMessage(GameStateSnapshot statePayload) {
         super("STATE_UPDATE");
         this.statePayload = statePayload;
     }
 
-    public String getStatePayload() { return statePayload; }
+    public GameStateSnapshot getStatePayload() { return statePayload; }
 }

@@ -51,9 +51,20 @@ public class ClientHandler implements Runnable {
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
 
+            // Notify server this handler is ready (streams created) so the
+            // server can wait for all clients before broadcasting initial state.
+            if (server != null) {
+                server.clientReady(this);
+            }
+
             while (true) {
                 Message message = (Message) in.readObject();
-                handle(message);
+                try {
+                    handle(message);
+                } catch (RuntimeException ex) {
+                    System.err.println("ClientHandler: game logic error(" + ex.getMessage() + ")");
+                    sendError(ex.getMessage());
+                }
             }
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("ClientHandler: client disconnected (" + e.getMessage() + ")");
@@ -67,10 +78,29 @@ public class ClientHandler implements Runnable {
 
         GameState gameState = server.getGameState();
 
+        // Determine which player this handler represents (based on join order
+        // and whether the server has a local host player).
+        int index = server.getClients().indexOf(this);
+        engine.Player sender;
+        if (server.hasLocalHost()) {
+            sender = (index == 0) ? engine.Player.PLAYER2 : engine.Player.PLAYER1;
+        } else {
+            sender = (index == 0) ? engine.Player.PLAYER1 : engine.Player.PLAYER2;
+        }
+
         if (message instanceof PlayCardMessage playCard) {
+            // Only accept plays from the player whose turn it currently is.
+            if (gameState.getCurrentTurn() != sender) {
+                sendError("Not your turn");
+                return;
+            }
             Card card = resolveCard(playCard.getCardName());
             gameState.playCard(card, playCard.getLaneIndex());
         } else if (message instanceof EndTurnMessage) {
+            if (gameState.getCurrentTurn() != sender) {
+                sendError("Not your turn");
+                return;
+            }
             gameState.endTurn();
         } else {
             return; // StateUpdateMessage or anything else isn't client-to-server
@@ -100,19 +130,23 @@ public class ClientHandler implements Runnable {
         throw new IllegalArgumentException("Unknown card name: " + cardName);
     }
 
+    private void sendError(String error) {
+        try {
+            sendMessage(new ErrorMessage(error));
+        } catch (RuntimeException ignored) {
+            // If the client is already disconnected, just close the connection.
+            close();
+        }
+    }
+
     /**
      * Minimal state snapshot for now (life totals + whose turn it is).
      * Extend once lane/card representation over JSON is worth the added
      * complexity — Card/Lane don't have a JSON form yet.
      */
     private void broadcastState(GameState gameState) {
-        String json = String.format(
-                "{\"player1Life\":%d,\"player2Life\":%d,\"currentTurn\":\"%s\"}",
-                gameState.getPlayer1Life(),
-                gameState.getPlayer2Life(),
-                gameState.getCurrentTurn()
-        );
-        server.broadcast(new StateUpdateMessage(json));
+        GameStateSnapshot snapshot = GameStateSnapshot.fromGameState(gameState);
+        server.broadcast(new StateUpdateMessage(snapshot));
     }
 
     public synchronized void sendMessage(Message message) {
@@ -132,6 +166,9 @@ public class ClientHandler implements Runnable {
         try {
             socket.close();
         } catch (IOException ignored) {
+        }
+        if (server != null) {
+            server.getClients().remove(this);
         }
     }
 }

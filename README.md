@@ -78,7 +78,25 @@ This project uses Maven and JUnit 5.
 mvn test
 ```
 
-Requires JDK 17+ and Maven installed locally. GUI classes (`src/main/java/gui/`) are intentionally not part of the automated test suite — JavaFX screens are hard to meaningfully unit test, so verify those manually by running the app once the engine/networking/persistence layers are implemented and wired up.
+If Maven is not available on your path, use your IDE's built-in Maven support or install Maven locally.
+
+Requires JDK 17+ and JavaFX 21. The GUI screens can be verified manually after the engine, networking, and persistence layers are working.
+
+### Running the application
+
+From the command line, use the JavaFX Maven plugin:
+
+```
+mvn javafx:run
+```
+
+If you prefer a packaged jar, build with:
+
+```
+mvn package
+```
+
+Then run the jar with an appropriate JavaFX module path or your IDE's JavaFX runtime settings.
 
 ### Test coverage by module
 

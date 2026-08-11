@@ -11,10 +11,13 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import persistence.PlayerProfile;
+import persistence.ProfileManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +26,10 @@ public class DeckBuilderScreen extends BorderPane {
     private final ThroneBoundApp app;
     private final PlayerProfile profile;
     private final List<String> selectedCards = new ArrayList<>();
-    private final VBox cardListBox = new VBox(8);
+    private final FlowPane cardGrid = new FlowPane(14, 14);
+    private final VBox selectedCardsPane = new VBox(8);
     private final Label deckStatusLabel = new Label("Selected 0 / 25 cards");
+    private final ProgressBar selectionProgressBar = new ProgressBar(0);
     private final Button readyButton = new Button("Ready");
     private Faction selectedFaction;
 
@@ -52,43 +57,45 @@ public class DeckBuilderScreen extends BorderPane {
         arcaneButton.setOnAction(event -> selectFaction(new ArcaneOrderFaction()));
         undeadButton.setOnAction(event -> selectFaction(new UndeadLegionFaction()));
         backButton.setOnAction(event -> app.showMainMenu(profile));
+        readyButton.setText("Start Match");
         readyButton.setOnAction(event -> finishDeck());
         readyButton.setDisable(true);
-
-        beastkinButton.getStyleClass().add("secondary-button");
-        arcaneButton.getStyleClass().add("secondary-button");
-        undeadButton.getStyleClass().add("secondary-button");
         backButton.getStyleClass().add("secondary-button");
         readyButton.getStyleClass().add("action-button");
 
         sidePanel.getStyleClass().add("panel");
-        sidePanel.getChildren().addAll(title, subtitle, beastkinButton, arcaneButton, undeadButton, backButton, readyButton, deckStatusLabel);
+        sidePanel.getChildren().addAll(title, subtitle, beastkinButton, arcaneButton, undeadButton, backButton, readyButton, deckStatusLabel, selectionProgressBar, selectedCardsPane);
 
-        cardListBox.getStyleClass().add("panel");
-        cardListBox.setMinWidth(360);
+        cardGrid.getStyleClass().add("card-grid");
+        cardGrid.setMinWidth(640);
 
         setLeft(sidePanel);
-        setCenter(cardListBox);
+        setCenter(cardGrid);
 
         selectFaction(new BeastkinFaction());
     }
 
     private void selectFaction(Faction faction) {
         this.selectedFaction = faction;
-        cardListBox.getChildren().clear();
-        cardListBox.setSpacing(8);
+        cardGrid.getChildren().clear();
+        selectedCardsPane.getChildren().clear();
+        selectedCardsPane.getChildren().add(new Label("Selected cards:"));
+        updateSelectionPreview();
+
         if (availableCardsForFaction(faction).isEmpty()) {
             Label emptyLabel = new Label("No unlocked cards for this faction yet.");
             emptyLabel.getStyleClass().add("info-label");
-            cardListBox.getChildren().add(emptyLabel);
+            cardGrid.getChildren().add(emptyLabel);
             return;
         }
         for (Card card : availableCardsForFaction(faction)) {
-            Button cardButton = new Button(card.getName() + "  " + formatCost(card.getCost()));
+            Button cardButton = new Button(card.getName() + "\n" + formatCost(card.getCost()));
             cardButton.getStyleClass().add("card-button");
+            cardButton.setMinSize(180, 180);
+            cardButton.setWrapText(true);
             UiHelpers.applyHoverEffect(cardButton);
             cardButton.setOnAction(event -> addCard(card.getName()));
-            cardListBox.getChildren().add(cardButton);
+            cardGrid.getChildren().add(cardButton);
         }
     }
 
@@ -99,7 +106,43 @@ public class DeckBuilderScreen extends BorderPane {
         }
         selectedCards.add(cardName);
         deckStatusLabel.setText("Selected " + selectedCards.size() + " / 25 cards");
+        selectionProgressBar.setProgress(selectedCards.size() / 25.0);
         readyButton.setDisable(selectedCards.size() != 25);
+        updateSelectionPreview();
+    }
+
+    private void updateSelectionPreview() {
+        selectedCardsPane.getChildren().clear();
+        Label previewTitle = new Label("Selected cards:");
+        previewTitle.getStyleClass().add("subtitle-label");
+        selectedCardsPane.getChildren().add(previewTitle);
+        int displayCount = Math.min(selectedCards.size(), 6);
+        for (int i = 0; i < displayCount; i++) {
+            HBox row = new HBox(8);
+            row.setAlignment(Pos.CENTER_LEFT);
+            Label cardLabel = new Label((i + 1) + ". " + selectedCards.get(i));
+            cardLabel.getStyleClass().add("info-label");
+            Button removeButton = new Button("Remove");
+            removeButton.getStyleClass().add("secondary-button");
+            int finalI = i;
+            removeButton.setOnAction(event -> removeCard(finalI));
+            UiHelpers.applyHoverEffect(removeButton);
+            row.getChildren().addAll(cardLabel, removeButton);
+            selectedCardsPane.getChildren().add(row);
+        }
+        if (selectedCards.size() > 6) {
+            selectedCardsPane.getChildren().add(new Label("..." + (selectedCards.size() - 6) + " more"));
+        }
+    }
+
+    private void removeCard(int index) {
+        if (index >= 0 && index < selectedCards.size()) {
+            selectedCards.remove(index);
+            deckStatusLabel.setText("Selected " + selectedCards.size() + " / 25 cards");
+            selectionProgressBar.setProgress(selectedCards.size() / 25.0);
+            readyButton.setDisable(selectedCards.size() != 25);
+            updateSelectionPreview();
+        }
     }
 
     private void finishDeck() {
@@ -110,6 +153,7 @@ public class DeckBuilderScreen extends BorderPane {
 
         Deck deck = new Deck(resolveCards(selectedCards));
         profile.saveDeck(deck);
+        new persistence.ProfileManager("profiles").save(profile);
         app.showMatch(profile, deck);
     }
 

@@ -1,6 +1,9 @@
 package cards;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import cards.CardFactory;
 
 /**
  * Deck
@@ -14,6 +17,22 @@ public class Deck {
     }
 
     public List<Card> getCards() { return cards; }
+
+    public List<String> getCardNames() {
+        List<String> names = new ArrayList<>();
+        for (Card card : cards) {
+            names.add(card.getName());
+        }
+        return names;
+    }
+
+    public static Deck fromCardNames(List<String> cardNames) {
+        List<Card> cards = new ArrayList<>();
+        for (String name : cardNames) {
+            cards.add(CardFactory.createCard(name));
+        }
+        return new Deck(cards);
+    }
 
     /** Validate per the 25-card deck-size rule. */
     public boolean validate() {

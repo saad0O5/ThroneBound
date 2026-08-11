@@ -57,8 +57,15 @@ public class LoginScreen extends VBox {
     }
 
     private void handleLogin() {
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel.setText("Username and password cannot be blank.");
+            return;
+        }
+
         try {
-            PlayerProfile profile = profileManager.login(usernameField.getText(), passwordField.getText());
+            PlayerProfile profile = profileManager.login(username, password);
             app.showMainMenu(profile);
         } catch (InvalidCredentialsException ex) {
             statusLabel.setText(ex.getMessage());
@@ -66,9 +73,16 @@ public class LoginScreen extends VBox {
     }
 
     private void handleRegister() {
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel.setText("Username and password cannot be blank.");
+            return;
+        }
+
         try {
-            PlayerProfile profile = profileManager.register(usernameField.getText(), passwordField.getText());
-            statusLabel.setText("Registration successful. Please log in.");
+            PlayerProfile profile = profileManager.register(username, password);
+            statusLabel.setText("Registration successful. Welcome, " + profile.getUsername() + "!");
             app.showMainMenu(profile);
         } catch (IllegalStateException ex) {
             statusLabel.setText(ex.getMessage());

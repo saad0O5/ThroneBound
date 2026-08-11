@@ -1,9 +1,10 @@
 package engine;
 
 import cards.Card;
+import java.util.List;
 
 /**
- * CombatResolver applies one-sided combat damage from an attacker into a defender.
+ * CombatResolver applies one-sided or mutual combat damage between cards.
  */
 public class CombatResolver {
     public void resolveAttack(Card attacker, Card defender) {
@@ -21,6 +22,25 @@ public class CombatResolver {
 
         if (updatedHealth <= 0 && state != null) {
             defender.onDeath(state);
+        }
+    }
+
+    public void resolveMutualAttack(Card attacker, Card defender, GameState state, List<Card> diedThisRound) {
+        if (attacker == null || defender == null) {
+            return;
+        }
+
+        int attackerHealthAfter = attacker.getHealth() - defender.getAttack();
+        int defenderHealthAfter = defender.getHealth() - attacker.getAttack();
+
+        attacker.setHealth(attackerHealthAfter);
+        defender.setHealth(defenderHealthAfter);
+
+        if (attackerHealthAfter <= 0) {
+            diedThisRound.add(attacker);
+        }
+        if (defenderHealthAfter <= 0) {
+            diedThisRound.add(defender);
         }
     }
 }

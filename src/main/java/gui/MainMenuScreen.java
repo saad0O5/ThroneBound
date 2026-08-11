@@ -43,23 +43,34 @@ public class MainMenuScreen extends VBox {
 
         Button playButton = new Button("Play");
         Button deckButton = new Button("Deck Builder");
-        Button statsButton = new Button("Profile / Stats");
+        Button refreshButton = new Button("Refresh Stats");
         Button exitButton = new Button("Exit");
 
         playButton.setOnAction(event -> app.showHostJoin(profile));
         deckButton.setOnAction(event -> app.showDeckBuilder(profile));
-        statsButton.setOnAction(event -> app.showMainMenu(profile));
+        refreshButton.setOnAction(event -> app.showMainMenu(profile));
         exitButton.setOnAction(event -> app.close());
 
         playButton.getStyleClass().add("action-button");
         deckButton.getStyleClass().add("secondary-button");
-        statsButton.getStyleClass().add("secondary-button");
+        refreshButton.getStyleClass().add("secondary-button");
         exitButton.getStyleClass().add("danger-button");
 
-        VBox menuBox = new VBox(10, playButton, deckButton, statsButton, exitButton);
+        VBox menuBox = new VBox(10, playButton, deckButton, refreshButton, exitButton);
         menuBox.setAlignment(Pos.CENTER);
         menuBox.getStyleClass().add("panel");
         menuBox.setMaxWidth(360);
-        getChildren().addAll(title, subtitle, statsLabel, menuBox);
+
+        Label instructionHeader = new Label("How to Play");
+        instructionHeader.getStyleClass().add("subtitle-label");
+        Label instructions = new Label("Build a deck of 25 cards, then play creatures and spells in lanes. \nDestroy opponent creatures or reduce their life to 0 to win. Use cards wisely and watch your resources.");
+        instructions.setWrapText(true);
+        instructions.getStyleClass().add("info-label");
+
+        VBox helpPanel = new VBox(8, instructionHeader, instructions);
+        helpPanel.getStyleClass().add("panel");
+        helpPanel.setMaxWidth(360);
+
+        getChildren().addAll(title, subtitle, statsLabel, menuBox, helpPanel);
     }
 }

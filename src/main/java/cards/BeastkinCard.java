@@ -10,7 +10,7 @@ import engine.Player;
  *
  * Shared base for Beastkin Clans cards — implements the "Pack" synergy pattern.
  */
-public abstract class BeastkinCard extends Card {
+public class BeastkinCard extends Card {
     protected BeastkinCard(String name, Cost cost, int attack, int health) {
         super(name, cost, attack, health);
     }
@@ -38,5 +38,10 @@ public abstract class BeastkinCard extends Card {
             }
         }
         return count;
+    }
+
+    @Override
+    public void play(GameState state) {
+        // Default Beastkin play effect is handled by concrete cards or no-op.
     }
 }

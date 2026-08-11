@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -19,6 +21,7 @@ public class GameClient {
     private ObjectInputStream in;
     private volatile boolean listening;
     private Consumer<Message> messageListener;
+    private final List<Message> bufferedMessages = new ArrayList<>();
 
     /**
      * Registers a callback invoked on the background listener thread (see
@@ -28,8 +31,14 @@ public class GameClient {
      * hopping onto the JavaFX thread with Platform.runLater(...) before
      * touching UI state, per that interface's own TODO.
      */
-    public void setMessageListener(Consumer<Message> listener) {
+    public synchronized void setMessageListener(Consumer<Message> listener) {
         this.messageListener = listener;
+        if (listener != null && !bufferedMessages.isEmpty()) {
+            for (Message message : new ArrayList<>(bufferedMessages)) {
+                listener.accept(message);
+            }
+            bufferedMessages.clear();
+        }
     }
 
     /**
@@ -82,8 +91,15 @@ public class GameClient {
             try {
                 while (listening) {
                     Message message = (Message) in.readObject();
-                    if (messageListener != null) {
-                        messageListener.accept(message);
+                    Consumer<Message> listener;
+                    synchronized (this) {
+                        listener = messageListener;
+                        if (listener == null) {
+                            bufferedMessages.add(message);
+                        }
+                    }
+                    if (listener != null) {
+                        listener.accept(message);
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {

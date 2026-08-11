@@ -20,6 +20,10 @@ public class GameServer {
     private final List<ClientHandler> clients;
     private final GameState gameState;
     private volatile ServerSocket serverSocket;
+    private boolean hasLocalHost = false;
+    private boolean hostReady = false;
+    private boolean remoteReady = false;
+    private Runnable onMatchStart;
 
     public GameServer(int port) {
         this(port, new GameState());
@@ -32,6 +36,10 @@ public class GameServer {
         this.gameState = gameState;
     }
 
+    public boolean hasLocalHost() { return hasLocalHost; }
+    public void setHasLocalHost(boolean hasLocalHost) { this.hasLocalHost = hasLocalHost; }
+    public void setOnMatchStart(Runnable callback) { this.onMatchStart = callback; }
+
     public int getPort() { return port; }
     public List<ClientHandler> getClients() { return clients; }
     public GameState getGameState() { return gameState; }
@@ -41,7 +49,7 @@ public class GameServer {
         try {
             ServerSocket socket = new ServerSocket(port);
             this.serverSocket = socket;
-            while (clients.size() < MAX_PLAYERS) {
+            while (clients.size() + (hasLocalHost ? 1 : 0) < MAX_PLAYERS) {
                 Socket clientSocket = socket.accept();
                 ClientHandler handler = new ClientHandler(clientSocket, this);
                 clients.add(handler);
@@ -52,6 +60,35 @@ public class GameServer {
             }
         } catch (IOException e) {
             throw new RuntimeException("GameServer failed to start on port " + port, e);
+        }
+    }
+
+    /** Called by ClientHandler when its streams are initialized. */
+    public synchronized void clientReady(ClientHandler handler) {
+        int index = clients.indexOf(handler);
+        engine.Player assigned;
+        if (hasLocalHost) {
+            assigned = (index == 0) ? engine.Player.PLAYER2 : engine.Player.PLAYER1;
+        } else {
+            assigned = (index == 0) ? engine.Player.PLAYER1 : engine.Player.PLAYER2;
+        }
+        try {
+            handler.sendMessage(new AssignPlayerMessage(assigned));
+        } catch (RuntimeException ignored) { }
+    }
+
+    public synchronized void markPlayerReady(engine.Player player) {
+        if (player == engine.Player.PLAYER1) {
+            hostReady = true;
+        } else {
+            remoteReady = true;
+        }
+        if (hostReady && remoteReady) {
+            if (onMatchStart != null) {
+                onMatchStart.run();
+            }
+            broadcast(new StartMatchMessage());
+            broadcast(new StateUpdateMessage(GameStateSnapshot.fromGameState(gameState)));
         }
     }
 
@@ -66,8 +103,14 @@ public class GameServer {
     }
 
     public void broadcast(Message message) {
-        for (ClientHandler client : clients) {
-            client.sendMessage(message);
+        for (ClientHandler client : List.copyOf(clients)) {
+            try {
+                client.sendMessage(message);
+            } catch (RuntimeException e) {
+                System.err.println("GameServer: failed to send to a client (removing): " + e.getMessage());
+                clients.remove(client);
+                client.close();
+            }
         }
     }
 }

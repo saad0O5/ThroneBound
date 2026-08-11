@@ -37,4 +37,20 @@ public class ResourcePool {
         mana += 1;
         soul += 1;
     }
+
+    public void addBonusMana(int bonus) {
+        mana += bonus;
+    }
+
+    public void setEssence(int essence) {
+        this.essence = essence;
+    }
+
+    public void setMana(int mana) {
+        this.mana = mana;
+    }
+
+    public void setSoul(int soul) {
+        this.soul = soul;
+    }
 }

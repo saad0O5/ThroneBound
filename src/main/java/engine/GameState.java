@@ -1,7 +1,9 @@
 package engine;
 
 import cards.Card;
+import cards.Cost;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -19,6 +21,8 @@ public class GameState {
     private final List<Card> graveyard;
     private final ResourcePool resourcesP1;
     private final ResourcePool resourcesP2;
+    private final EffectState player1EffectState;
+    private final EffectState player2EffectState;
     private Player currentTurn;
 
     public GameState() {
@@ -29,6 +33,8 @@ public class GameState {
         this.graveyard = new ArrayList<>();
         this.resourcesP1 = new ResourcePool(5, 5, 5);
         this.resourcesP2 = new ResourcePool(5, 5, 5);
+        this.player1EffectState = new EffectState();
+        this.player2EffectState = new EffectState();
         for (int i = 0; i < LANES_PER_PLAYER; i++) {
             lanesP1.add(new Lane());
             lanesP2.add(new Lane());
@@ -38,27 +44,34 @@ public class GameState {
 
     public int getPlayer1Life() { return player1Life; }
     public int getPlayer2Life() { return player2Life; }
-    public List<Lane> getLanesP1() { return lanesP1; }
-    public List<Lane> getLanesP2() { return lanesP2; }
+    public List<Lane> getLanesP1() { return Collections.unmodifiableList(lanesP1); }
+    public List<Lane> getLanesP2() { return Collections.unmodifiableList(lanesP2); }
     public List<Card> getGraveyard() { return graveyard; }
     public ResourcePool getResourcesP1() { return resourcesP1; }
     public ResourcePool getResourcesP2() { return resourcesP2; }
     public Player getCurrentTurn() { return currentTurn; }
+    public EffectState getPlayer1EffectState() { return player1EffectState; }
+    public EffectState getPlayer2EffectState() { return player2EffectState; }
 
     public synchronized void setPlayer1Life(int life) { this.player1Life = life; }
     public synchronized void setPlayer2Life(int life) { this.player2Life = life; }
     public synchronized void setCurrentTurn(Player turn) { this.currentTurn = turn; }
+    public synchronized void setPlayer1EffectState(EffectState state) { this.player1EffectState.copyFrom(state); }
+    public synchronized void setPlayer2EffectState(EffectState state) { this.player2EffectState.copyFrom(state); }
 
     public synchronized void playCard(Card card, int laneIndex) {
         if (card == null) {
             throw new IllegalArgumentException("Card cannot be null");
         }
 
-        ResourcePool currentResources = currentTurn == Player.PLAYER1 ? resourcesP1 : resourcesP2;
-        if (!currentResources.canAfford(card.getCost())) {
+        ResourcePool currentResources = getCurrentResources();
+        EffectState effectState = getCurrentEffectState();
+        Cost effectiveCost = getEffectiveCost(card, effectState);
+        if (!currentResources.canAfford(effectiveCost)) {
             throw new IllegalStateException("Player cannot afford this card");
         }
 
+        card.setOwner(currentTurn);
         if (!card.isSpell()) {
             if (laneIndex < 0 || laneIndex >= LANES_PER_PLAYER) {
                 throw new IllegalArgumentException("Lane index out of range");
@@ -72,9 +85,12 @@ public class GameState {
             card.setLane(targetLane);
         }
 
-        card.setOwner(currentTurn);
-        currentResources.deduct(card.getCost());
-        card.play(this);
+        currentResources.deduct(effectiveCost);
+        if (card.isSpell()) {
+            effectState.onSpellCast();
+        }
+        card.play(this, laneIndex);
+        effectState.applyPostPlayEffects(this);
     }
 
     public synchronized void endTurn() {
@@ -89,20 +105,136 @@ public class GameState {
 
     public synchronized void resolveCombat() {
         CombatResolver resolver = new CombatResolver();
+        List<Card> diedThisRound = new ArrayList<>();
+
         for (int i = 0; i < LANES_PER_PLAYER; i++) {
             Lane laneP1 = lanesP1.get(i);
             Lane laneP2 = lanesP2.get(i);
-            Card attacker = laneP1.getOccupant();
-            Card defender = laneP2.getOccupant();
+            Card cardP1 = laneP1.getOccupant();
+            Card cardP2 = laneP2.getOccupant();
 
-            if (attacker != null && defender != null) {
-                resolver.resolveAttack(attacker, defender, this);
-                if (defender.getHealth() <= 0) {
-                    laneP2.removeCard();
-                    defender.setLane(null);
-                    graveyard.add(defender);
-                }
+            if (cardP1 != null && cardP2 != null) {
+                resolver.resolveMutualAttack(cardP1, cardP2, this, diedThisRound);
             }
         }
+
+        for (Card dead : diedThisRound) {
+            removeCard(dead);
+        }
+    }
+
+    public synchronized void removeCard(Card card) {
+        if (card == null) {
+            return;
+        }
+        Lane lane = card.getLane();
+        if (lane != null) {
+            lane.removeCard();
+            card.setLane(null);
+        }
+        card.onDeath(this);
+        if (!graveyard.contains(card)) {
+            graveyard.add(card);
+        }
+    }
+
+    public synchronized void clearBoard() {
+        for (Lane lane : lanesP1) {
+            if (!lane.isEmpty()) {
+                lane.getOccupant().setLane(null);
+                lane.removeCard();
+            }
+        }
+        for (Lane lane : lanesP2) {
+            if (!lane.isEmpty()) {
+                lane.getOccupant().setLane(null);
+                lane.removeCard();
+            }
+        }
+    }
+
+    public synchronized void setLaneCard(Player player, int laneIndex, Card card) {
+        if (laneIndex < 0 || laneIndex >= LANES_PER_PLAYER) {
+            throw new IllegalArgumentException("Lane index out of range");
+        }
+        List<Lane> targetLanes = player == Player.PLAYER1 ? lanesP1 : lanesP2;
+        Lane lane = targetLanes.get(laneIndex);
+        if (!lane.isEmpty()) {
+            lane.removeCard();
+        }
+        if (card != null) {
+            lane.placeCard(card);
+            card.setLane(lane);
+            card.setOwner(player);
+        }
+    }
+
+    public synchronized void dealDamageToPlayer(Player player, int damage) {
+        if (player == Player.PLAYER1) {
+            player1Life -= damage;
+        } else {
+            player2Life -= damage;
+        }
+    }
+
+    public List<Lane> getLanesForPlayer(Player player) {
+        return player == Player.PLAYER1 ? lanesP1 : lanesP2;
+    }
+
+    public List<Lane> getOpponentLanes(Player player) {
+        return player == Player.PLAYER1 ? lanesP2 : lanesP1;
+    }
+
+    public ResourcePool getCurrentResources() {
+        return currentTurn == Player.PLAYER1 ? resourcesP1 : resourcesP2;
+    }
+
+    public EffectState getCurrentEffectState() {
+        return currentTurn == Player.PLAYER1 ? player1EffectState : player2EffectState;
+    }
+
+    private Cost getEffectiveCost(Card card, EffectState effectState) {
+        int essence = Math.max(0, card.getCost().getEssence() - effectState.getBeastkinEssenceDiscount());
+        int mana = card.getCost().getMana();
+        if (card.isSpell()) {
+            mana = Math.max(0, mana - effectState.getNextSpellManaDiscount());
+        }
+        int soul = card.getCost().getSoul();
+        return new Cost(essence, mana, soul);
+    }
+
+    public static final class EffectState {
+        private int beastkinEssenceDiscount;
+        private int nextSpellManaDiscount;
+        private int nextTurnManaBonus;
+        private boolean extraTurnPending;
+
+        public EffectState() { }
+
+        void copyFrom(EffectState other) {
+            if (other == null) return;
+            this.beastkinEssenceDiscount = other.beastkinEssenceDiscount;
+            this.nextSpellManaDiscount = other.nextSpellManaDiscount;
+            this.nextTurnManaBonus = other.nextTurnManaBonus;
+            this.extraTurnPending = other.extraTurnPending;
+        }
+
+        void onSpellCast() {
+            this.nextSpellManaDiscount = 0;
+        }
+
+        void applyPostPlayEffects(GameState state) {
+            // placeholder for persistent effects
+        }
+
+        public int getBeastkinEssenceDiscount() { return beastkinEssenceDiscount; }
+        public int getNextSpellManaDiscount() { return nextSpellManaDiscount; }
+        public int getNextTurnManaBonus() { return nextTurnManaBonus; }
+        public boolean isExtraTurnPending() { return extraTurnPending; }
+
+        public void setBeastkinEssenceDiscount(int discount) { this.beastkinEssenceDiscount = discount; }
+        public void setNextSpellManaDiscount(int discount) { this.nextSpellManaDiscount = discount; }
+        public void setNextTurnManaBonus(int bonus) { this.nextTurnManaBonus = bonus; }
+        public void setExtraTurnPending(boolean extraTurnPending) { this.extraTurnPending = extraTurnPending; }
     }
 }

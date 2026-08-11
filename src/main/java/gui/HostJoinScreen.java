@@ -33,6 +33,10 @@ public class HostJoinScreen extends VBox {
         Label subtitle = new Label("Gather allies or face your rival across the network");
         subtitle.getStyleClass().add("subtitle-label");
 
+        Label instructions = new Label("Host: enter a port only. Join: enter opponent IP and port.");
+        instructions.setWrapText(true);
+        instructions.getStyleClass().add("info-label");
+
         Button hostButton = new Button("Host Match");
         Button joinButton = new Button("Join Match");
         Button backButton = new Button("Back");
@@ -48,7 +52,7 @@ public class HostJoinScreen extends VBox {
         portField.setMaxWidth(320);
         statusLabel.getStyleClass().add("status-label");
 
-        VBox formBox = new VBox(10, title, subtitle, new Label("Host IP / Port"), hostField, portField, hostButton, joinButton, backButton, statusLabel);
+        VBox formBox = new VBox(10, title, subtitle, instructions, new Label("Host IP / Port"), hostField, portField, hostButton, joinButton, backButton, statusLabel);
         formBox.setAlignment(Pos.CENTER);
         formBox.getStyleClass().add("panel");
         formBox.setMaxWidth(420);
@@ -56,9 +60,16 @@ public class HostJoinScreen extends VBox {
     }
 
     private void hostMatch() {
+        String hostText = hostField.getText().trim();
+        String portText = portField.getText().trim();
+        if (hostText.isEmpty() || portText.isEmpty()) {
+            statusLabel.setText("Host and port fields must not be empty.");
+            return;
+        }
         try {
-            int port = Integer.parseInt(portField.getText());
+            int port = Integer.parseInt(portText);
             GameServer server = new GameServer(port);
+            server.setHasLocalHost(true);
             app.setActiveServer(server);
             Thread serverThread = new Thread(() -> {
                 try {
@@ -77,14 +88,22 @@ public class HostJoinScreen extends VBox {
     }
 
     private void joinMatch() {
+        String hostText = hostField.getText().trim();
+        String portText = portField.getText().trim();
+        if (hostText.isEmpty() || portText.isEmpty()) {
+            statusLabel.setText("Host and port fields must not be empty.");
+            return;
+        }
         try {
-            int port = Integer.parseInt(portField.getText());
+            int port = Integer.parseInt(portText);
             GameClient client = new GameClient();
-            client.connect(hostField.getText(), port);
+            client.connect(hostText, port);
             client.listen();
             app.setActiveClient(client);
-            statusLabel.setText("Connected to " + hostField.getText() + ":" + port);
+            statusLabel.setText("Connected to " + hostText + ":" + port);
             app.showDeckBuilder(profile);
+        } catch (NumberFormatException ex) {
+            statusLabel.setText("Please enter a valid port number.");
         } catch (RuntimeException ex) {
             statusLabel.setText("Connection failed: " + ex.getMessage());
         }
