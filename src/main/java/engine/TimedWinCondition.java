@@ -14,6 +14,10 @@ public class TimedWinCondition implements WinCondition {
 
     public int getTurnCount() { return turnCount; }
 
+    public int getTurnCap() { return TURN_CAP; }
+
+    public boolean isAtCap() { return turnCount >= TURN_CAP; }
+
     public void incrementTurn() {
         turnCount++;
     }
@@ -23,6 +27,8 @@ public class TimedWinCondition implements WinCondition {
         if (state.getPlayer1Life() <= 0 || state.getPlayer2Life() <= 0) {
             return true;
         }
-        return turnCount >= TURN_CAP;
+        // end the match when the turn cap is reached; winner determination
+        // (player with greater life, or draw) should be resolved by the caller
+        return isAtCap();
     }
 }

@@ -1,5 +1,5 @@
 .root {
-    -fx-background-color: linear-gradient(to bottom, #120813, #2b1236 55%, #0f0711);
+    -fx-background-color: linear-gradient(to bottom, #4a3b56 0%, #6b4f7a 45%, #3b2b3d 100%);
     -fx-font-family: "Segoe UI";
     -fx-text-fill: #f6eacc;
 }
@@ -7,6 +7,41 @@
 .screen-root {
     -fx-padding: 32;
     -fx-alignment: center;
+    -fx-min-width: 1024px;
+    -fx-min-height: 720px;
+    -fx-background-color: transparent; /* let .root show through for unified background */
+}
+
+.host-join-screen {
+    -fx-background-color: transparent; /* use app root gradient for consistent theme */
+}
+
+.menu-content {
+    -fx-spacing: 28;
+    -fx-alignment: top-center;
+}
+
+.faction-banner {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f7d583;
+    -fx-padding: 8 0 12 0;
+}
+
+.match-screen {
+    -fx-background-color: transparent; /* inherit the new light purplish root gradient */
+}
+
+.match-scrollpane {
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.login-panel {
+    -fx-background-color: rgba(39, 24, 49, 0.96);
+    -fx-padding: 24;
+    -fx-border-color: rgba(158, 112, 42, 0.6);
+    -fx-border-width: 1.4;
 }
 
 .title-label {
@@ -37,8 +72,16 @@
     -fx-border-color: rgba(158, 112, 42, 0.45);
     -fx-border-radius: 14;
     -fx-border-width: 1.2;
-    -fx-padding: 16;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 10, 0.25, 0, 3);
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.52), 14, 0.28, 0, 4);
+}
+
+.host-join-panel {
+    -fx-background-color: rgba(26, 12, 31, 0.92);
+    -fx-border-color: rgba(185, 132, 60, 0.42);
+    -fx-border-width: 1.3;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
 }
 
 .card-grid {
@@ -52,6 +95,96 @@
     -fx-border-radius: 12;
     -fx-background-radius: 12;
     -fx-padding: 16;
+    -fx-clip-to-padding: true;
+    -fx-max-width: 1160px;
+    -fx-pref-width: 1160px;
+}
+
+.hand-card.selected {
+    -fx-border-color: rgba(201,162,75,0.9);
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(201,162,75,0.28), 12, 0.3, 0, 0);
+}
+
+.playable {
+    -fx-opacity: 1;
+}
+
+.unplayable {
+    -fx-opacity: 0.5;
+}
+
+.lane.drop-target {
+    -fx-border-color: rgba(201,162,75,0.9);
+    -fx-border-width: 2px;
+    -fx-background-color: rgba(201,162,75,0.10);
+}
+
+.lane-row {
+    -fx-spacing: 18;
+    -fx-alignment: center;
+    -fx-padding: 10 0;
+}
+
+.lane-group-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #d4c187;
+}
+
+.turn-banner {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f5df8d;
+}
+
+.button:hover {
+    -fx-opacity: 0.92;
+}
+
+.hand-scroller .viewport {
+    -fx-padding: 6;
+}
+
+.hand-scroller {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.top-panel {
+    -fx-background-color: rgba(35, 21, 52, 0.82);
+    -fx-border-color: rgba(189, 144, 69, 0.4);
+}
+
+.lane-panel:hover {
+    -fx-background-color: rgba(66, 38, 79, 0.95);
+}
+
+.lane-action {
+    -fx-background-color: rgba(236, 181, 76, 0.18);
+    -fx-text-fill: #f7e7c0;
+    -fx-border-color: rgba(236, 181, 76, 0.6);
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+.lane-action:hover {
+    -fx-background-color: rgba(236, 181, 76, 0.32);
+}
+
+.button:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
+
+.resource-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #f4e0af;
+}
+
+.player-label {
+    -fx-text-fill: #c8b47c;
 }
 
 .button:hover {
@@ -89,6 +222,32 @@
 .action-button {
     -fx-background-color: linear-gradient(to bottom, #c48a2d, #8d5618);
     -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(196,160,98,0.45), 6, 0.3, 0, 2);
+}
+
+.wide-button {
+    -fx-min-width: 100%;
+    -fx-font-size: 14px;
+    -fx-padding: 14 18;
+}
+
+.tab-button {
+    -fx-background-color: rgba(92, 61, 44, 0.88);
+    -fx-text-fill: #f7e7c0;
+    -fx-border-color: rgba(196,160,98,0.45);
+    -fx-border-width: 1px;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 18;
+}
+
+.tab-button:hover {
+    -fx-background-color: rgba(120, 82, 56, 0.95);
+}
+
+.active-tab {
+    -fx-background-color: linear-gradient(to bottom, #c48a2d, #8d5618);
+    -fx-text-fill: white;
 }
 
 .secondary-button {
@@ -107,15 +266,20 @@
     -fx-padding: 10 12;
     -fx-border-color: rgba(156, 109, 47, 0.4);
     -fx-border-radius: 8;
+    -fx-min-width: 140px;
+    -fx-pref-width: 140px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 6, 0.2, 0, 2);
 }
 
 .lane-panel {
     -fx-background-color: rgba(24, 14, 29, 0.88);
     -fx-border-color: rgba(202, 148, 57, 0.45);
     -fx-border-radius: 10;
-    -fx-padding: 12;
-    -fx-min-width: 180;
-    -fx-min-height: 120;
+    -fx-padding: 14;
+    -fx-min-width: 210px;
+    -fx-pref-width: 240px;
+    -fx-min-height: 160px;
+    -fx-pref-height: 180px;
 }
 
 .board-title {

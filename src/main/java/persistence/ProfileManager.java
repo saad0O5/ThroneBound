@@ -48,7 +48,10 @@ public class ProfileManager {
     public void save(PlayerProfile profile) {
         try {
             Files.createDirectories(Path.of(storageDirectory));
-            Files.writeString(profilePath(profile.getUsername()), gson.toJson(toDto(profile)), StandardCharsets.UTF_8);
+            Path target = profilePath(profile.getUsername());
+            Path tmp = Path.of(target.toString() + ".tmp");
+            Files.writeString(tmp, gson.toJson(toDto(profile)), StandardCharsets.UTF_8);
+            Files.move(tmp, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to save profile for " + profile.getUsername(), e);
         }

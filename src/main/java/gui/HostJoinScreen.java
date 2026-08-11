@@ -6,12 +6,14 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import network.GameClient;
 import network.GameServer;
 import persistence.PlayerProfile;
 
-public class HostJoinScreen extends VBox {
+public class HostJoinScreen extends AnchorPane {
     private final ThroneBoundApp app;
     private final PlayerProfile profile;
     private final TextField hostField = new TextField("127.0.0.1");
@@ -22,41 +24,68 @@ public class HostJoinScreen extends VBox {
         this.app = app;
         this.profile = profile;
 
-        setAlignment(Pos.CENTER);
-        setSpacing(12);
-        setPadding(new Insets(32));
-        getStyleClass().add("screen-root");
+        getStyleClass().addAll("screen-root", "host-join-screen");
 
-        Label title = new Label("Host or Join a Match");
-        title.getStyleClass().add("title-label");
+        Button tabHost = new Button("Host");
+        Button tabJoin = new Button("Join");
+        tabHost.getStyleClass().addAll("tab-button", "action-button");
+        tabJoin.getStyleClass().addAll("tab-button", "action-button");
+        HBox tabs = new HBox(8, tabHost, tabJoin);
+        tabs.setAlignment(Pos.CENTER);
+        tabs.setMaxWidth(560);
 
-        Label subtitle = new Label("Gather allies or face your rival across the network");
-        subtitle.getStyleClass().add("subtitle-label");
+        Button hostMatchBtn = new Button("Host Match");
+        hostMatchBtn.getStyleClass().addAll("action-button", "wide-button");
+        hostMatchBtn.setOnAction(e -> hostMatch());
+        hostMatchBtn.setMaxWidth(Double.MAX_VALUE);
+        hostField.setMaxWidth(Double.MAX_VALUE);
+        portField.setMaxWidth(Double.MAX_VALUE);
+        VBox hostPane = new VBox(12, new Label("Host IP / Port"), hostField, portField, hostMatchBtn, statusLabel);
+        hostPane.getStyleClass().addAll("panel", "host-join-panel");
+        hostPane.setMaxWidth(520);
+        hostPane.setFillWidth(true);
 
-        Label instructions = new Label("Host: enter a port only. Join: enter opponent IP and port.");
-        instructions.setWrapText(true);
-        instructions.getStyleClass().add("info-label");
+        Button connectBtn = new Button("Connect");
+        connectBtn.getStyleClass().addAll("action-button", "wide-button");
+        connectBtn.setOnAction(e -> joinMatch());
+        connectBtn.setMaxWidth(Double.MAX_VALUE);
+        VBox joinPane = new VBox(12, new Label("Connect to Host"), hostField, portField, connectBtn, statusLabel);
+        joinPane.getStyleClass().addAll("panel", "host-join-panel");
+        joinPane.setMaxWidth(520);
+        joinPane.setFillWidth(true);
 
-        Button hostButton = new Button("Host Match");
-        Button joinButton = new Button("Join Match");
+        VBox content = new VBox(24, tabs, hostPane, joinPane);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.setMaxWidth(560);
+        AnchorPane.setTopAnchor(content, 60.0);
+        AnchorPane.setLeftAnchor(content, 0.0);
+        AnchorPane.setRightAnchor(content, 0.0);
+
+        tabHost.setOnAction(e -> {
+            hostPane.setVisible(true);
+            joinPane.setVisible(false);
+            tabHost.getStyleClass().add("active-tab");
+            tabJoin.getStyleClass().remove("active-tab");
+        });
+        tabJoin.setOnAction(e -> {
+            hostPane.setVisible(false);
+            joinPane.setVisible(true);
+            tabJoin.getStyleClass().add("active-tab");
+            tabHost.getStyleClass().remove("active-tab");
+        });
+
+        // default to Host mode
+        hostPane.setVisible(true);
+        joinPane.setVisible(false);
+        tabHost.getStyleClass().add("active-tab");
+
         Button backButton = new Button("Back");
-
-        hostButton.setOnAction(event -> hostMatch());
-        joinButton.setOnAction(event -> joinMatch());
-        backButton.setOnAction(event -> app.showMainMenu(profile));
-        hostButton.getStyleClass().add("action-button");
-        joinButton.getStyleClass().add("secondary-button");
         backButton.getStyleClass().add("secondary-button");
+        backButton.setOnAction(e -> app.showMainMenu(profile));
+        AnchorPane.setTopAnchor(backButton, 12.0);
+        AnchorPane.setLeftAnchor(backButton, 12.0);
 
-        hostField.setMaxWidth(320);
-        portField.setMaxWidth(320);
-        statusLabel.getStyleClass().add("status-label");
-
-        VBox formBox = new VBox(10, title, subtitle, instructions, new Label("Host IP / Port"), hostField, portField, hostButton, joinButton, backButton, statusLabel);
-        formBox.setAlignment(Pos.CENTER);
-        formBox.getStyleClass().add("panel");
-        formBox.setMaxWidth(420);
-        getChildren().add(formBox);
+        getChildren().addAll(content, backButton);
     }
 
     private void hostMatch() {

@@ -18,19 +18,22 @@ public class GameState {
     private int player2Life;
     private final List<Lane> lanesP1;
     private final List<Lane> lanesP2;
-    private final List<Card> graveyard;
+    private final List<Card> graveyardP1;
+    private final List<Card> graveyardP2;
     private final ResourcePool resourcesP1;
     private final ResourcePool resourcesP2;
     private final EffectState player1EffectState;
     private final EffectState player2EffectState;
     private Player currentTurn;
+    private boolean matchOver = false;
 
     public GameState() {
         this.player1Life = STARTING_LIFE;
         this.player2Life = STARTING_LIFE;
         this.lanesP1 = new ArrayList<>();
         this.lanesP2 = new ArrayList<>();
-        this.graveyard = new ArrayList<>();
+        this.graveyardP1 = new ArrayList<>();
+        this.graveyardP2 = new ArrayList<>();
         this.resourcesP1 = new ResourcePool(5, 5, 5);
         this.resourcesP2 = new ResourcePool(5, 5, 5);
         this.player1EffectState = new EffectState();
@@ -46,7 +49,16 @@ public class GameState {
     public int getPlayer2Life() { return player2Life; }
     public List<Lane> getLanesP1() { return Collections.unmodifiableList(lanesP1); }
     public List<Lane> getLanesP2() { return Collections.unmodifiableList(lanesP2); }
-    public List<Card> getGraveyard() { return graveyard; }
+    public List<Card> getGraveyard() { 
+        List<Card> combined = new ArrayList<>();
+        combined.addAll(graveyardP1);
+        combined.addAll(graveyardP2);
+        return combined;
+    }
+
+    public List<Card> getGraveyardForPlayer(Player player) {
+        return player == Player.PLAYER1 ? graveyardP1 : graveyardP2;
+    }
     public ResourcePool getResourcesP1() { return resourcesP1; }
     public ResourcePool getResourcesP2() { return resourcesP2; }
     public Player getCurrentTurn() { return currentTurn; }
@@ -60,6 +72,7 @@ public class GameState {
     public synchronized void setPlayer2EffectState(EffectState state) { this.player2EffectState.copyFrom(state); }
 
     public synchronized void playCard(Card card, int laneIndex) {
+        if (matchOver) throw new IllegalStateException("Match is already over");
         if (card == null) {
             throw new IllegalArgumentException("Card cannot be null");
         }
@@ -94,6 +107,7 @@ public class GameState {
     }
 
     public synchronized void endTurn() {
+        if (matchOver) return;
         if (currentTurn == Player.PLAYER1) {
             currentTurn = Player.PLAYER2;
             resourcesP2.accumulate();
@@ -104,6 +118,7 @@ public class GameState {
     }
 
     public synchronized void resolveCombat() {
+        if (matchOver) return;
         CombatResolver resolver = new CombatResolver();
         List<Card> diedThisRound = new ArrayList<>();
 
@@ -124,6 +139,7 @@ public class GameState {
     }
 
     public synchronized void removeCard(Card card) {
+        if (matchOver) return;
         if (card == null) {
             return;
         }
@@ -132,13 +148,22 @@ public class GameState {
             lane.removeCard();
             card.setLane(null);
         }
+        // invoke death trigger exactly once here
         card.onDeath(this);
-        if (!graveyard.contains(card)) {
-            graveyard.add(card);
+        // add to appropriate graveyard
+        Player owner = card.getOwner();
+        if (owner == Player.PLAYER1) {
+            if (!graveyardP1.contains(card)) graveyardP1.add(card);
+        } else if (owner == Player.PLAYER2) {
+            if (!graveyardP2.contains(card)) graveyardP2.add(card);
+        } else {
+            // fallback: add to P1
+            if (!graveyardP1.contains(card)) graveyardP1.add(card);
         }
     }
 
     public synchronized void clearBoard() {
+        if (matchOver) return;
         for (Lane lane : lanesP1) {
             if (!lane.isEmpty()) {
                 lane.getOccupant().setLane(null);
@@ -152,6 +177,10 @@ public class GameState {
             }
         }
     }
+
+    public synchronized boolean isMatchOver() { return matchOver; }
+
+    public synchronized void setMatchOver(boolean over) { this.matchOver = over; }
 
     public synchronized void setLaneCard(Player player, int laneIndex, Card card) {
         if (laneIndex < 0 || laneIndex >= LANES_PER_PLAYER) {

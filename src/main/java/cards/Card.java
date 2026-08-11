@@ -20,6 +20,7 @@ public abstract class Card {
     private final boolean spell;
     private Player owner;
     private Lane lane;
+    private boolean resurrectedOnce = false;
 
     protected Card(String name, Cost cost, int attack, int health) {
         this(name, cost, attack, health, false);
@@ -60,4 +61,7 @@ public abstract class Card {
     public void onDeath(GameState state) {
         // no-op by default
     }
+
+    public boolean hasResurrectedOnce() { return resurrectedOnce; }
+    public void markResurrectedOnce() { this.resurrectedOnce = true; }
 }

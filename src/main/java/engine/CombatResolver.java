@@ -19,10 +19,6 @@ public class CombatResolver {
         int incomingDamage = attacker.getAttack();
         int updatedHealth = defender.getHealth() - incomingDamage;
         defender.setHealth(updatedHealth);
-
-        if (updatedHealth <= 0 && state != null) {
-            defender.onDeath(state);
-        }
     }
 
     public void resolveMutualAttack(Card attacker, Card defender, GameState state, List<Card> diedThisRound) {

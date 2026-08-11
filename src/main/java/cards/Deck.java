@@ -34,8 +34,8 @@ public class Deck {
         return new Deck(cards);
     }
 
-    /** Validate per the 25-card deck-size rule. */
+    /** Validate per the 12-card deck-size rule. */
     public boolean validate() {
-        return cards.size() == 25;
+        return cards.size() == 12;
     }
 }

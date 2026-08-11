@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -19,11 +21,13 @@ public class GameServer {
     private final int port;
     private final List<ClientHandler> clients;
     private final GameState gameState;
+    private final engine.TurnManager turnManager;
     private volatile ServerSocket serverSocket;
     private boolean hasLocalHost = false;
     private boolean hostReady = false;
     private boolean remoteReady = false;
     private Runnable onMatchStart;
+    private final Map<engine.Player, SetupInfo> playerSetup = new HashMap<>();
 
     public GameServer(int port) {
         this(port, new GameState());
@@ -34,6 +38,7 @@ public class GameServer {
         this.port = port;
         this.clients = new CopyOnWriteArrayList<>();
         this.gameState = gameState;
+        this.turnManager = new engine.TurnManager(new engine.StandardWinCondition());
     }
 
     public boolean hasLocalHost() { return hasLocalHost; }
@@ -43,6 +48,21 @@ public class GameServer {
     public int getPort() { return port; }
     public List<ClientHandler> getClients() { return clients; }
     public GameState getGameState() { return gameState; }
+
+    public engine.TurnManager getTurnManager() { return turnManager; }
+
+    /**
+     * Check configured win condition and mark the game over if met.
+     * Broadcasts final state to clients when match ends.
+     */
+    public synchronized void checkAndHandleWin() {
+        if (gameState.isMatchOver()) return;
+        if (turnManager.checkWinCondition(gameState)) {
+            gameState.setMatchOver(true);
+            broadcast(new StateUpdateMessage(network.GameStateSnapshot.fromGameState(gameState)));
+            // Optionally broadcast a specific end-match message in future
+        }
+    }
 
     /** Blocks accepting connections until MAX_PLAYERS clients have joined. */
     public void start() {
@@ -77,6 +97,10 @@ public class GameServer {
         } catch (RuntimeException ignored) { }
     }
 
+    public synchronized void recordPlayerSetup(engine.Player player, String factionName, java.util.List<String> deckCardNames) {
+        playerSetup.put(player, new SetupInfo(factionName, deckCardNames));
+    }
+
     public synchronized void markPlayerReady(engine.Player player) {
         if (player == engine.Player.PLAYER1) {
             hostReady = true;
@@ -84,11 +108,25 @@ public class GameServer {
             remoteReady = true;
         }
         if (hostReady && remoteReady) {
+            SetupInfo s1 = playerSetup.get(engine.Player.PLAYER1);
+            SetupInfo s2 = playerSetup.get(engine.Player.PLAYER2);
+            boolean valid = s1 != null && s2 != null && s1.deckCards != null && s2.deckCards != null && s1.deckCards.size() == 12 && s2.deckCards.size() == 12 && s1.factionName != null && s2.factionName != null;
+            if (!valid) return;
             if (onMatchStart != null) {
                 onMatchStart.run();
             }
             broadcast(new StartMatchMessage());
             broadcast(new StateUpdateMessage(GameStateSnapshot.fromGameState(gameState)));
+        }
+    }
+
+    private static final class SetupInfo {
+        final String factionName;
+        final java.util.List<String> deckCards;
+
+        SetupInfo(String factionName, java.util.List<String> deckCards) {
+            this.factionName = factionName;
+            this.deckCards = deckCards;
         }
     }
 
@@ -100,6 +138,13 @@ public class GameServer {
         for (ClientHandler handler : clients) {
             handler.close();
         }
+    }
+
+    public synchronized void handleForfeit(engine.Player player, String reason) {
+        if (gameState.isMatchOver()) return;
+        gameState.setMatchOver(true);
+        broadcast(new ForfeitMessage(reason));
+        broadcast(new StateUpdateMessage(GameStateSnapshot.fromGameState(gameState)));
     }
 
     public void broadcast(Message message) {

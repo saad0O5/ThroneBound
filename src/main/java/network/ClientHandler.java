@@ -78,6 +78,11 @@ public class ClientHandler implements Runnable {
 
         GameState gameState = server.getGameState();
 
+        if (gameState.isMatchOver()) {
+            sendError("Match is already over");
+            return;
+        }
+
         // Determine which player this handler represents (based on join order
         // and whether the server has a local host player).
         int index = server.getClients().indexOf(this);
@@ -103,6 +108,12 @@ public class ClientHandler implements Runnable {
             }
             gameState.endTurn();
         } else {
+            if (message instanceof SetupMessage setup) {
+                server.recordPlayerSetup(sender, setup.getFactionName(), setup.getDeckCardNames());
+                server.markPlayerReady(sender);
+                return;
+            }
+            
             return; // StateUpdateMessage or anything else isn't client-to-server
         }
 
@@ -147,6 +158,7 @@ public class ClientHandler implements Runnable {
     private void broadcastState(GameState gameState) {
         GameStateSnapshot snapshot = GameStateSnapshot.fromGameState(gameState);
         server.broadcast(new StateUpdateMessage(snapshot));
+        server.checkAndHandleWin();
     }
 
     public synchronized void sendMessage(Message message) {
@@ -168,7 +180,16 @@ public class ClientHandler implements Runnable {
         } catch (IOException ignored) {
         }
         if (server != null) {
+            // Inform server of disconnect and treat as forfeit
+            int index = server.getClients().indexOf(this);
+            engine.Player assigned;
+            if (server.hasLocalHost()) {
+                assigned = (index == 0) ? engine.Player.PLAYER2 : engine.Player.PLAYER1;
+            } else {
+                assigned = (index == 0) ? engine.Player.PLAYER1 : engine.Player.PLAYER2;
+            }
             server.getClients().remove(this);
+            server.handleForfeit(assigned, "Player disconnected");
         }
     }
 }

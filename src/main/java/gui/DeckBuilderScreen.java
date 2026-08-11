@@ -12,9 +12,12 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.VBox;
 import persistence.PlayerProfile;
 import persistence.ProfileManager;
@@ -22,13 +25,15 @@ import persistence.ProfileManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DeckBuilderScreen extends BorderPane {
+public class DeckBuilderScreen extends GridPane {
+    private static final int MAX_DECK_SIZE = 12;
     private final ThroneBoundApp app;
     private final PlayerProfile profile;
     private final List<String> selectedCards = new ArrayList<>();
     private final FlowPane cardGrid = new FlowPane(14, 14);
     private final VBox selectedCardsPane = new VBox(8);
-    private final Label deckStatusLabel = new Label("Selected 0 / 25 cards");
+    private final Label factionBanner = new Label();
+    private final Label deckStatusLabel = new Label("Selected 0 / " + MAX_DECK_SIZE + " cards");
     private final ProgressBar selectionProgressBar = new ProgressBar(0);
     private final Button readyButton = new Button("Ready");
     private Faction selectedFaction;
@@ -40,9 +45,17 @@ public class DeckBuilderScreen extends BorderPane {
         setPadding(new Insets(24));
         getStyleClass().add("screen-root");
 
+        // Grid: row0 = banner (6%), row1 = content (94%); cols: 70% / 30%
+        RowConstraints r0 = new RowConstraints(); r0.setPercentHeight(6);
+        RowConstraints r1 = new RowConstraints(); r1.setPercentHeight(94);
+        getRowConstraints().addAll(r0, r1);
+        ColumnConstraints c1 = new ColumnConstraints(); c1.setPercentWidth(70);
+        ColumnConstraints c2 = new ColumnConstraints(); c2.setPercentWidth(30);
+        getColumnConstraints().addAll(c1, c2);
+
         VBox sidePanel = new VBox(12);
         sidePanel.setAlignment(Pos.TOP_LEFT);
-        Label title = new Label("Build a 25-card Deck");
+        Label title = new Label("Build a " + MAX_DECK_SIZE + "-card Deck");
         title.getStyleClass().add("title-label");
 
         Label subtitle = new Label("Select cards from your unlocked pool");
@@ -64,19 +77,26 @@ public class DeckBuilderScreen extends BorderPane {
         readyButton.getStyleClass().add("action-button");
 
         sidePanel.getStyleClass().add("panel");
+        sidePanel.setMaxWidth(380);
         sidePanel.getChildren().addAll(title, subtitle, beastkinButton, arcaneButton, undeadButton, backButton, readyButton, deckStatusLabel, selectionProgressBar, selectedCardsPane);
 
         cardGrid.getStyleClass().add("card-grid");
         cardGrid.setMinWidth(640);
+        cardGrid.setPrefWrapLength(820);
 
-        setLeft(sidePanel);
-        setCenter(cardGrid);
+        // Banner across top
+        factionBanner.getStyleClass().add("faction-banner");
+        add(factionBanner, 0, 0, 2, 1);
+
+        add(cardGrid, 0, 1);
+        add(sidePanel, 1, 1);
 
         selectFaction(new BeastkinFaction());
     }
 
     private void selectFaction(Faction faction) {
         this.selectedFaction = faction;
+        factionBanner.setText("Faction: " + getFactionLabel(faction));
         cardGrid.getChildren().clear();
         selectedCardsPane.getChildren().clear();
         selectedCardsPane.getChildren().add(new Label("Selected cards:"));
@@ -100,14 +120,14 @@ public class DeckBuilderScreen extends BorderPane {
     }
 
     private void addCard(String cardName) {
-        if (selectedCards.size() >= 25) {
+        if (selectedCards.size() >= MAX_DECK_SIZE) {
             deckStatusLabel.setText("Deck is already full.");
             return;
         }
         selectedCards.add(cardName);
-        deckStatusLabel.setText("Selected " + selectedCards.size() + " / 25 cards");
-        selectionProgressBar.setProgress(selectedCards.size() / 25.0);
-        readyButton.setDisable(selectedCards.size() != 25);
+        deckStatusLabel.setText("Selected " + selectedCards.size() + " / " + MAX_DECK_SIZE + " cards");
+        selectionProgressBar.setProgress(selectedCards.size() / (double) MAX_DECK_SIZE);
+        readyButton.setDisable(selectedCards.size() != MAX_DECK_SIZE);
         updateSelectionPreview();
     }
 
@@ -138,22 +158,32 @@ public class DeckBuilderScreen extends BorderPane {
     private void removeCard(int index) {
         if (index >= 0 && index < selectedCards.size()) {
             selectedCards.remove(index);
-            deckStatusLabel.setText("Selected " + selectedCards.size() + " / 25 cards");
-            selectionProgressBar.setProgress(selectedCards.size() / 25.0);
-            readyButton.setDisable(selectedCards.size() != 25);
+            deckStatusLabel.setText("Selected " + selectedCards.size() + " / " + MAX_DECK_SIZE + " cards");
+            selectionProgressBar.setProgress(selectedCards.size() / (double) MAX_DECK_SIZE);
+            readyButton.setDisable(selectedCards.size() != MAX_DECK_SIZE);
             updateSelectionPreview();
         }
     }
 
     private void finishDeck() {
-        if (selectedCards.size() != 25) {
-            deckStatusLabel.setText("A valid deck must contain exactly 25 cards.");
+        if (selectedCards.size() != MAX_DECK_SIZE) {
+            deckStatusLabel.setText("A valid deck must contain exactly " + MAX_DECK_SIZE + " cards.");
             return;
         }
 
         Deck deck = new Deck(resolveCards(selectedCards));
         profile.saveDeck(deck);
         new persistence.ProfileManager("profiles").save(profile);
+        // If networked, submit setup to server or send to remote host
+        if (app.getActiveClient() != null) {
+            network.GameClient client = app.getActiveClient();
+            client.sendMessage(new network.SetupMessage(selectedFaction.getClass().getSimpleName(), selectedCards));
+        }
+        if (app.getActiveServer() != null) {
+            // assume local host is PLAYER1
+            app.getActiveServer().recordPlayerSetup(engine.Player.PLAYER1, selectedFaction.getClass().getSimpleName(), selectedCards);
+            app.getActiveServer().markPlayerReady(engine.Player.PLAYER1);
+        }
         app.showMatch(profile, deck);
     }
 
@@ -188,4 +218,18 @@ public class DeckBuilderScreen extends BorderPane {
     private String formatCost(Cost cost) {
         return "[E:" + cost.getEssence() + " M:" + cost.getMana() + " S:" + cost.getSoul() + "]";
     }
+
+    private String getFactionLabel(Faction faction) {
+        if (faction instanceof BeastkinFaction) {
+            return "Beastkin Clans";
+        }
+        if (faction instanceof ArcaneOrderFaction) {
+            return "Arcane Order";
+        }
+        if (faction instanceof UndeadLegionFaction) {
+            return "Undead Legion";
+        }
+        return faction.getClass().getSimpleName();
+    }
+
 }

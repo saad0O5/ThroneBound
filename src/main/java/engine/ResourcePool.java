@@ -27,9 +27,15 @@ public class ResourcePool {
     }
 
     public void deduct(Cost cost) {
+        if (!canAfford(cost)) {
+            throw new IllegalStateException("Attempted to deduct unaffordable cost");
+        }
         essence -= cost.getEssence();
         mana -= cost.getMana();
         soul -= cost.getSoul();
+        if (essence < 0) essence = 0;
+        if (mana < 0) mana = 0;
+        if (soul < 0) soul = 0;
     }
 
     public void accumulate() {

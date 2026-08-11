@@ -4,11 +4,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import persistence.MatchRecord;
 import persistence.PlayerProfile;
 
-public class MainMenuScreen extends VBox {
+public class MainMenuScreen extends AnchorPane {
     private final ThroneBoundApp app;
     private final PlayerProfile profile;
 
@@ -16,9 +17,6 @@ public class MainMenuScreen extends VBox {
         this.app = app;
         this.profile = profile;
 
-        setAlignment(Pos.CENTER);
-        setSpacing(14);
-        setPadding(new Insets(32));
         getStyleClass().add("screen-root");
 
         Label title = new Label("Welcome, " + profile.getUsername());
@@ -56,21 +54,45 @@ public class MainMenuScreen extends VBox {
         refreshButton.getStyleClass().add("secondary-button");
         exitButton.getStyleClass().add("danger-button");
 
-        VBox menuBox = new VBox(10, playButton, deckButton, refreshButton, exitButton);
+        VBox menuBox = new VBox(14, playButton, deckButton, refreshButton, exitButton);
         menuBox.setAlignment(Pos.CENTER);
         menuBox.getStyleClass().add("panel");
-        menuBox.setMaxWidth(360);
+        menuBox.setMaxWidth(420);
+        menuBox.setMinWidth(360);
 
         Label instructionHeader = new Label("How to Play");
         instructionHeader.getStyleClass().add("subtitle-label");
-        Label instructions = new Label("Build a deck of 25 cards, then play creatures and spells in lanes. \nDestroy opponent creatures or reduce their life to 0 to win. Use cards wisely and watch your resources.");
+        Label instructions = new Label("Build a deck of 12 cards, then play creatures and spells in lanes.\nDestroy opponent creatures or reduce their life to 0 to win.");
         instructions.setWrapText(true);
+        instructions.setMaxWidth(520);
         instructions.getStyleClass().add("info-label");
 
-        VBox helpPanel = new VBox(8, instructionHeader, instructions);
+        VBox helpPanel = new VBox(10, instructionHeader, instructions);
         helpPanel.getStyleClass().add("panel");
-        helpPanel.setMaxWidth(360);
+        helpPanel.setMaxWidth(520);
+        helpPanel.setMinWidth(420);
 
-        getChildren().addAll(title, subtitle, statsLabel, menuBox, helpPanel);
+        VBox centerColumn = new VBox(24, menuBox, helpPanel);
+        centerColumn.setAlignment(Pos.TOP_CENTER);
+        centerColumn.setMaxWidth(520);
+
+        VBox titleColumn = new VBox(8, title, subtitle);
+        titleColumn.setAlignment(Pos.CENTER);
+        titleColumn.setMaxWidth(760);
+
+        VBox content = new VBox(28, titleColumn, centerColumn);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("menu-content");
+        content.setMaxWidth(760);
+        content.setPrefWidth(760);
+
+        AnchorPane.setTopAnchor(content, 90.0);
+        AnchorPane.setLeftAnchor(content, 120.0);
+        AnchorPane.setRightAnchor(content, 120.0);
+
+        AnchorPane.setTopAnchor(statsLabel, 18.0);
+        AnchorPane.setRightAnchor(statsLabel, 24.0);
+
+        getChildren().addAll(content, statsLabel);
     }
 }

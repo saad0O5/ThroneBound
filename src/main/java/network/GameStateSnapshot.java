@@ -24,6 +24,8 @@ public class GameStateSnapshot implements Serializable {
     private List<CardSnapshot> lanesP1;
     private List<CardSnapshot> lanesP2;
     private List<String> graveyard;
+    private List<String> graveyardP1;
+    private List<String> graveyardP2;
 
     public GameStateSnapshot() { }
 
@@ -42,9 +44,13 @@ public class GameStateSnapshot implements Serializable {
             snapshot.lanesP1.add(CardSnapshot.fromCard(state.getLanesP1().get(i).getOccupant()));
             snapshot.lanesP2.add(CardSnapshot.fromCard(state.getLanesP2().get(i).getOccupant()));
         }
-        snapshot.graveyard = new ArrayList<>();
-        for (Card card : state.getGraveyard()) {
-            snapshot.graveyard.add(card.getName());
+        snapshot.graveyardP1 = new ArrayList<>();
+        snapshot.graveyardP2 = new ArrayList<>();
+        for (Card card : state.getGraveyardForPlayer(Player.PLAYER1)) {
+            snapshot.graveyardP1.add(card.getName());
+        }
+        for (Card card : state.getGraveyardForPlayer(Player.PLAYER2)) {
+            snapshot.graveyardP2.add(card.getName());
         }
         return snapshot;
     }
@@ -76,9 +82,17 @@ public class GameStateSnapshot implements Serializable {
                 state.setLaneCard(Player.PLAYER2, i, card);
             }
         }
-        state.getGraveyard().clear();
-        for (String name : graveyard) {
-            state.getGraveyard().add(CardFactory.createCard(name));
+        state.getGraveyardForPlayer(Player.PLAYER1).clear();
+        state.getGraveyardForPlayer(Player.PLAYER2).clear();
+        if (graveyardP1 != null) {
+            for (String name : graveyardP1) {
+                state.getGraveyardForPlayer(Player.PLAYER1).add(CardFactory.createCard(name));
+            }
+        }
+        if (graveyardP2 != null) {
+            for (String name : graveyardP2) {
+                state.getGraveyardForPlayer(Player.PLAYER2).add(CardFactory.createCard(name));
+            }
         }
     }
 

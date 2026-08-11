@@ -1,6 +1,9 @@
 package gui;
 
 import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
+import javafx.scene.Node;
+import javafx.scene.layout.HBox;
 import javafx.scene.control.Button;
 import javafx.util.Duration;
 
@@ -19,5 +22,21 @@ public final class UiHelpers {
 
         button.setOnMouseEntered(event -> hoverIn.playFromStart());
         button.setOnMouseExited(event -> hoverOut.playFromStart());
+    }
+
+    public static void applyHandCardEffect(Node cardNode, HBox handRow) {
+        TranslateTransition lift = new TranslateTransition(Duration.millis(120), cardNode);
+        lift.setToY(-22);
+        TranslateTransition drop = new TranslateTransition(Duration.millis(120), cardNode);
+        drop.setToY(0);
+
+        cardNode.setOnMouseEntered(e -> {
+            lift.playFromStart();
+            if (handRow != null) handRow.setSpacing(10); // relax overlap
+        });
+        cardNode.setOnMouseExited(e -> {
+            drop.playFromStart();
+            if (handRow != null) handRow.setSpacing(-40); // restore overlap
+        });
     }
 }
