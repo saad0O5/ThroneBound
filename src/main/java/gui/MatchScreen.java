@@ -20,7 +20,9 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -49,6 +51,8 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     private final HBox handRow = new HBox(16);
     private final Label selectedCardLabel = new Label("No card selected.");
     private final Label statusLabel = new Label("Select a card, then choose a lane.");
+    private final Label resourceSummaryLabel = new Label("Resources: E 0 | M 0 | S 0");
+    private final AnchorPane instructionOverlay = buildInstructionOverlay();
     private Card selectedCard;
     private Button selectedCardButton = null;
     private Player localPlayer = null;
@@ -129,7 +133,7 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         AnchorPane.setBottomAnchor(wrapper, 0.0);
         AnchorPane.setLeftAnchor(wrapper, 0.0);
         AnchorPane.setRightAnchor(wrapper, 0.0);
-        getChildren().add(wrapper);
+        getChildren().addAll(wrapper, instructionOverlay);
 
         onStateChanged(gameState);
     }
@@ -179,6 +183,15 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     private VBox buildTopPanel() {
         Label title = new Label("Match in Progress");
         title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+
+        Button instructionsButton = new Button("Instructions");
+        instructionsButton.getStyleClass().add("secondary-button");
+        instructionsButton.setOnAction(event -> {
+            instructionOverlay.setVisible(true);
+            instructionOverlay.toFront();
+            instructionOverlay.requestFocus();
+        });
+
         Button backButton = new Button("Back to Menu");
         backButton.getStyleClass().add("secondary-button");
         backButton.setOnAction(event -> {
@@ -191,30 +204,90 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
             app.showMainMenu(profile);
         });
         UiHelpers.applyHoverEffect(backButton);
-        HBox topRow = new HBox(18, title, backButton);
+        UiHelpers.applyHoverEffect(instructionsButton);
+
+        HBox spacer = new HBox();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox topRow = new HBox(12, title, spacer, instructionsButton, backButton);
         topRow.setAlignment(Pos.CENTER_LEFT);
-        topRow.setSpacing(18);
+        topRow.setSpacing(12);
 
         selectedCardLabel.getStyleClass().add("info-label");
-        Label headerSubtitle = new Label("Match board — choose your cards and dominate the lanes");
-        headerSubtitle.getStyleClass().add("subtitle-label");
-        Label rulesLabel = new Label("Goal: reduce the enemy to 0 life. End turn to pass. Match ends at 30 turns or when someone hits 0 life.");
-        rulesLabel.setWrapText(true);
-        rulesLabel.setMaxWidth(980);
-        rulesLabel.getStyleClass().add("info-label");
         lifeLabel.getStyleClass().add("info-label");
+        resourceSummaryLabel.getStyleClass().add("info-label");
         updateLifeLabel(gameState);
+        updateResourceSummary(gameState);
 
-        HBox statusRow = new HBox(12, selectedCardLabel, lifeLabel);
+        HBox statusRow = new HBox(12, selectedCardLabel, lifeLabel, resourceSummaryLabel);
         statusRow.setAlignment(Pos.CENTER_LEFT);
+        statusRow.setSpacing(12);
 
-        VBox panel = new VBox(10, topRow, headerSubtitle, rulesLabel, statusRow);
+        VBox panel = new VBox(8, topRow, statusRow);
         panel.getStyleClass().addAll("panel", "top-panel");
         panel.setPadding(new Insets(12));
+        panel.setSpacing(8);
         AnchorPane.setTopAnchor(panel, 0.0);
         AnchorPane.setLeftAnchor(panel, 0.0);
         AnchorPane.setRightAnchor(panel, 0.0);
         return panel;
+    }
+
+    private AnchorPane buildInstructionOverlay() {
+        Label title = new Label("How to Play");
+        title.getStyleClass().add("title-label");
+
+        Label body = new Label(
+                "1. Build a deck and choose your lane.\n"
+                        + "2. You may play only one card per turn.\n"
+                        + "3. Reduce the enemy life to 0 to win.\n"
+                        + "4. If no one reaches 0, the match ends after 30 turns by higher life total.\n"
+                        + "5. End your turn to pass the action to your opponent."
+        );
+        body.setWrapText(true);
+        body.setMaxWidth(420);
+        body.getStyleClass().add("info-label");
+
+        Button closeButton = new Button("Close");
+        closeButton.getStyleClass().add("secondary-button");
+        closeButton.setOnAction(event -> instructionOverlay.setVisible(false));
+
+        VBox popup = new VBox(14, title, body, closeButton);
+        popup.getStyleClass().addAll("panel", "instruction-popup");
+        popup.setPadding(new Insets(20));
+        popup.setMaxWidth(500);
+        popup.setPrefWidth(500);
+        popup.setAlignment(Pos.CENTER_LEFT);
+
+        Region dimmer = new Region();
+        dimmer.setStyle("-fx-background-color: rgba(8, 8, 12, 0.72);");
+
+        AnchorPane overlay = new AnchorPane();
+        overlay.setVisible(false);
+        overlay.setManaged(false);
+        overlay.setMouseTransparent(false);
+        overlay.getChildren().addAll(dimmer, popup);
+
+        AnchorPane.setTopAnchor(dimmer, 0.0);
+        AnchorPane.setBottomAnchor(dimmer, 0.0);
+        AnchorPane.setLeftAnchor(dimmer, 0.0);
+        AnchorPane.setRightAnchor(dimmer, 0.0);
+
+        AnchorPane.setTopAnchor(popup, 0.0);
+        AnchorPane.setBottomAnchor(popup, 0.0);
+        AnchorPane.setLeftAnchor(popup, 0.0);
+        AnchorPane.setRightAnchor(popup, 0.0);
+
+        overlay.widthProperty().addListener((obs, oldValue, newValue) -> {
+            double x = (newValue.doubleValue() - popup.getPrefWidth()) / 2.0;
+            popup.setLayoutX(Math.max(0, x));
+        });
+        overlay.heightProperty().addListener((obs, oldValue, newValue) -> {
+            double y = (newValue.doubleValue() - popup.getPrefHeight()) / 2.0;
+            popup.setLayoutY(Math.max(0, y));
+        });
+
+        return overlay;
     }
 
     private VBox buildOpponentLanes() {
@@ -258,6 +331,7 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         box.setAlignment(Pos.CENTER_LEFT);
         Label playerLabel = new Label(localPlayer != null ? "You: " + localPlayer : "You: PLAYER1");
         playerLabel.getStyleClass().addAll("board-title", "player-label");
+        resourceSummaryLabel.setText("Current turn resources: E " + gameState.getCurrentResources().getEssence() + " | M " + gameState.getCurrentResources().getMana() + " | S " + gameState.getCurrentResources().getSoul());
         HBox resources = buildResourceBadges(gameState.getCurrentResources());
         Button endTurnButton = new Button("End Turn");
         endTurnButton.getStyleClass().addAll("action-button", "end-turn-btn");
@@ -272,6 +346,8 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         VBox handPanel = new VBox(10);
         handPanel.setAlignment(Pos.CENTER_LEFT);
         handPanel.getStyleClass().add("hand-panel");
+        handPanel.setMinHeight(220);
+        handPanel.setPrefHeight(260);
         handRow.getChildren().clear();
         handRow.setAlignment(Pos.CENTER_LEFT);
         handRow.setSpacing(16);
@@ -357,6 +433,12 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         lifeLabel.setText("Life — P1: " + state.getPlayer1Life() + " | P2: " + state.getPlayer2Life());
     }
 
+    private void updateResourceSummary(GameState state) {
+        ResourcePool current = state.getCurrentResources();
+        resourceSummaryLabel.setText("Resources: E " + current.getEssence() + " | M " + current.getMana() + " | S " + current.getSoul());
+        resourceLabel.setText("Resources: E " + current.getEssence() + " | M " + current.getMana() + " | S " + current.getSoul());
+    }
+
     private void updateTurnBanner(GameState state) {
         turnBanner.setText("Turn: " + state.getCurrentTurn());
         if (state.getCurrentTurn() == Player.PLAYER1) {
@@ -386,6 +468,9 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         if (!isLocalTurn() && selectedCard != null) {
             clearSelection();
         }
+        if (state.getActionsThisTurn() >= GameState.MAX_ACTIONS_PER_TURN) {
+            clearSelection();
+        }
 
         Player me = localPlayer != null ? localPlayer : Player.PLAYER1;
         Player opponent = (me == Player.PLAYER1) ? Player.PLAYER2 : Player.PLAYER1;
@@ -402,8 +487,8 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
             playerRow.getChildren().add(lanePane);
         }
 
-        resourceLabel.setText("Resources: " + formatResources(state.getCurrentResources()));
         updateLifeLabel(state);
+        updateResourceSummary(state);
         updateHandAvailability(state);
         updateTurnBanner(state);
     }
@@ -438,6 +523,10 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
             statusLabel.setText("Not your turn yet.");
             return;
         }
+        if (gameState.getActionsThisTurn() >= GameState.MAX_ACTIONS_PER_TURN) {
+            statusLabel.setText("You already played this turn.");
+            return;
+        }
         if (button.isDisable()) {
             statusLabel.setText("You cannot play that card right now.");
             return;
@@ -458,6 +547,11 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     private void playSelectedCard(int laneIndex) {
         if (!isLocalTurn()) {
             statusLabel.setText("Not your turn yet.");
+            return;
+        }
+        if (gameState.getActionsThisTurn() >= GameState.MAX_ACTIONS_PER_TURN) {
+            statusLabel.setText("You already played this turn.");
+            clearSelection();
             return;
         }
         if (selectedCard == null) {

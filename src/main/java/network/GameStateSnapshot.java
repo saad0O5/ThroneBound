@@ -16,6 +16,7 @@ import java.util.List;
 public class GameStateSnapshot implements Serializable {
     private int player1Life;
     private int player2Life;
+    private int actionsThisTurn;
     private Player currentTurn;
     private ResourceState resourcesP1;
     private ResourceState resourcesP2;
@@ -33,6 +34,7 @@ public class GameStateSnapshot implements Serializable {
         GameStateSnapshot snapshot = new GameStateSnapshot();
         snapshot.player1Life = state.getPlayer1Life();
         snapshot.player2Life = state.getPlayer2Life();
+        snapshot.actionsThisTurn = state.getActionsThisTurn();
         snapshot.currentTurn = state.getCurrentTurn();
         snapshot.resourcesP1 = new ResourceState(state.getResourcesP1());
         snapshot.resourcesP2 = new ResourceState(state.getResourcesP2());
@@ -58,6 +60,7 @@ public class GameStateSnapshot implements Serializable {
     public void applyTo(GameState state) {
         state.setPlayer1Life(player1Life);
         state.setPlayer2Life(player2Life);
+        state.setActionsThisTurn(actionsThisTurn);
         state.setCurrentTurn(currentTurn);
         state.getResourcesP1().setEssence(resourcesP1.essence);
         state.getResourcesP1().setMana(resourcesP1.mana);

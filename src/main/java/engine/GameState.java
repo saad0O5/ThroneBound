@@ -13,9 +13,11 @@ import java.util.List;
 public class GameState {
     public static final int STARTING_LIFE = 25;
     public static final int LANES_PER_PLAYER = 3;
+    public static final int MAX_ACTIONS_PER_TURN = 1;
 
     private int player1Life;
     private int player2Life;
+    private int actionsThisTurn;
     private final List<Lane> lanesP1;
     private final List<Lane> lanesP2;
     private final List<Card> graveyardP1;
@@ -43,10 +45,12 @@ public class GameState {
             lanesP2.add(new Lane());
         }
         this.currentTurn = Player.PLAYER1;
+        this.actionsThisTurn = 0;
     }
 
     public int getPlayer1Life() { return player1Life; }
     public int getPlayer2Life() { return player2Life; }
+    public int getActionsThisTurn() { return actionsThisTurn; }
     public List<Lane> getLanesP1() { return Collections.unmodifiableList(lanesP1); }
     public List<Lane> getLanesP2() { return Collections.unmodifiableList(lanesP2); }
     public List<Card> getGraveyard() { 
@@ -67,7 +71,11 @@ public class GameState {
 
     public synchronized void setPlayer1Life(int life) { this.player1Life = life; }
     public synchronized void setPlayer2Life(int life) { this.player2Life = life; }
-    public synchronized void setCurrentTurn(Player turn) { this.currentTurn = turn; }
+    public synchronized void setCurrentTurn(Player turn) {
+        this.currentTurn = turn;
+        this.actionsThisTurn = 0;
+    }
+    public synchronized void setActionsThisTurn(int actionsThisTurn) { this.actionsThisTurn = actionsThisTurn; }
     public synchronized void setPlayer1EffectState(EffectState state) { this.player1EffectState.copyFrom(state); }
     public synchronized void setPlayer2EffectState(EffectState state) { this.player2EffectState.copyFrom(state); }
 
@@ -75,6 +83,9 @@ public class GameState {
         if (matchOver) throw new IllegalStateException("Match is already over");
         if (card == null) {
             throw new IllegalArgumentException("Card cannot be null");
+        }
+        if (actionsThisTurn >= MAX_ACTIONS_PER_TURN) {
+            throw new IllegalStateException("You can only play one card per turn.");
         }
 
         ResourcePool currentResources = getCurrentResources();
@@ -104,6 +115,7 @@ public class GameState {
         }
         card.play(this, laneIndex);
         effectState.applyPostPlayEffects(this);
+        actionsThisTurn++;
     }
 
     public synchronized void endTurn() {
@@ -115,6 +127,7 @@ public class GameState {
             currentTurn = Player.PLAYER1;
             resourcesP1.accumulate();
         }
+        actionsThisTurn = 0;
     }
 
     public synchronized void resolveCombat() {

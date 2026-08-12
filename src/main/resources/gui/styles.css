@@ -36,10 +36,12 @@
     -fx-background-color: #1a1a1f;
     -fx-background: #1a1a1f;
     -fx-border-color: transparent;
+    -fx-padding: 0;
 }
 
 .match-scrollpane .viewport {
     -fx-background-color: #1a1a1f;
+    -fx-padding: 0;
 }
 
 .login-panel {
@@ -103,6 +105,7 @@
     -fx-clip-to-padding: true;
     -fx-max-width: 1160px;
     -fx-pref-width: 1160px;
+    -fx-min-height: 220px;
 }
 
 .hand-card.selected {
