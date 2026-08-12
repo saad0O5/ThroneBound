@@ -29,12 +29,17 @@
 }
 
 .match-screen {
-    -fx-background-color: transparent; /* inherit the new light purplish root gradient */
+    -fx-background-color: linear-gradient(to bottom, #0d0d12 0%, #171420 42%, #0a0b10 100%);
 }
 
 .match-scrollpane {
-    -fx-background: transparent;
+    -fx-background-color: #1a1a1f;
+    -fx-background: #1a1a1f;
     -fx-border-color: transparent;
+}
+
+.match-scrollpane .viewport {
+    -fx-background-color: #1a1a1f;
 }
 
 .login-panel {
@@ -209,10 +214,16 @@
 }
 
 .button {
+    -fx-background-color: linear-gradient(to bottom, #c48a2d, #8d5618);
+    -fx-border-color: rgba(246, 218, 149, 0.7);
+    -fx-border-width: 1px;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
     -fx-padding: 10 18;
     -fx-cursor: hand;
     -fx-font-weight: bold;
     -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(196,160,98,0.45), 6, 0.3, 0, 2);
 }
 
 .button:hover {
