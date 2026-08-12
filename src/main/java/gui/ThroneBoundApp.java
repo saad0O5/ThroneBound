@@ -118,6 +118,10 @@ public class ThroneBoundApp extends Application {
         SceneManager.getInstance().setRoot(new ResultsScreen(this, profile, won));
     }
 
+    public Stage getPrimaryStage() {
+        return primaryStage;
+    }
+
     public void setActiveServer(GameServer server) {
         this.activeServer = server;
     }

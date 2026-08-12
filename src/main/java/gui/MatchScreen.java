@@ -11,6 +11,7 @@ import engine.TurnManager;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -20,13 +21,13 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.RowConstraints;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import network.EndTurnMessage;
 import network.ErrorMessage;
 import network.GameClient;
@@ -52,7 +53,6 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     private final Label selectedCardLabel = new Label("No card selected.");
     private final Label statusLabel = new Label("Select a card, then choose a lane.");
     private final Label resourceSummaryLabel = new Label("Resources: E 0 | M 0 | S 0");
-    private final AnchorPane instructionOverlay = buildInstructionOverlay();
     private Card selectedCard;
     private Button selectedCardButton = null;
     private Player localPlayer = null;
@@ -133,7 +133,7 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         AnchorPane.setBottomAnchor(wrapper, 0.0);
         AnchorPane.setLeftAnchor(wrapper, 0.0);
         AnchorPane.setRightAnchor(wrapper, 0.0);
-        getChildren().addAll(wrapper, instructionOverlay);
+        getChildren().add(wrapper);
 
         onStateChanged(gameState);
     }
@@ -186,11 +186,7 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
 
         Button instructionsButton = new Button("Instructions");
         instructionsButton.getStyleClass().add("secondary-button");
-        instructionsButton.setOnAction(event -> {
-            instructionOverlay.setVisible(true);
-            instructionOverlay.toFront();
-            instructionOverlay.requestFocus();
-        });
+        instructionsButton.setOnAction(event -> showInstructionsDialog());
 
         Button backButton = new Button("Back to Menu");
         backButton.getStyleClass().add("secondary-button");
@@ -233,7 +229,12 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         return panel;
     }
 
-    private AnchorPane buildInstructionOverlay() {
+    private void showInstructionsDialog() {
+        Stage dialog = new Stage();
+        dialog.initOwner(app.getPrimaryStage());
+        dialog.initModality(Modality.WINDOW_MODAL);
+        dialog.setTitle("How to Play");
+
         Label title = new Label("How to Play");
         title.getStyleClass().add("title-label");
 
@@ -250,44 +251,19 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
 
         Button closeButton = new Button("Close");
         closeButton.getStyleClass().add("secondary-button");
-        closeButton.setOnAction(event -> instructionOverlay.setVisible(false));
+        closeButton.setOnAction(e -> dialog.close());
 
-        VBox popup = new VBox(14, title, body, closeButton);
-        popup.getStyleClass().addAll("panel", "instruction-popup");
-        popup.setPadding(new Insets(20));
-        popup.setMaxWidth(500);
-        popup.setPrefWidth(500);
-        popup.setAlignment(Pos.CENTER_LEFT);
+        VBox content = new VBox(16, title, body, closeButton);
+        content.setPadding(new Insets(20));
+        content.setAlignment(Pos.CENTER_LEFT);
+        content.getStyleClass().addAll("panel");
+        content.setPrefWidth(500);
 
-        Region dimmer = new Region();
-        dimmer.setStyle("-fx-background-color: rgba(8, 8, 12, 0.72);");
-
-        AnchorPane overlay = new AnchorPane();
-        overlay.setVisible(false);
-        overlay.setManaged(false);
-        overlay.setMouseTransparent(false);
-        overlay.getChildren().addAll(dimmer, popup);
-
-        AnchorPane.setTopAnchor(dimmer, 0.0);
-        AnchorPane.setBottomAnchor(dimmer, 0.0);
-        AnchorPane.setLeftAnchor(dimmer, 0.0);
-        AnchorPane.setRightAnchor(dimmer, 0.0);
-
-        AnchorPane.setTopAnchor(popup, 0.0);
-        AnchorPane.setBottomAnchor(popup, 0.0);
-        AnchorPane.setLeftAnchor(popup, 0.0);
-        AnchorPane.setRightAnchor(popup, 0.0);
-
-        overlay.widthProperty().addListener((obs, oldValue, newValue) -> {
-            double x = (newValue.doubleValue() - popup.getPrefWidth()) / 2.0;
-            popup.setLayoutX(Math.max(0, x));
-        });
-        overlay.heightProperty().addListener((obs, oldValue, newValue) -> {
-            double y = (newValue.doubleValue() - popup.getPrefHeight()) / 2.0;
-            popup.setLayoutY(Math.max(0, y));
-        });
-
-        return overlay;
+        Scene scene = new Scene(content, 520, 260);
+        scene.getStylesheets().add(getClass().getResource("/gui/styles.css").toExternalForm());
+        dialog.setScene(scene);
+        dialog.setResizable(false);
+        dialog.showAndWait();
     }
 
     private VBox buildOpponentLanes() {

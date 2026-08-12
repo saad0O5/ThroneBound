@@ -55,9 +55,9 @@ thronebound/
 
 | Member | Module |
 |---|---|
-| _Member A_ | Networking & Concurrency |
-| _Member B_ | Game Engine & Cards/Factions |
-| _Member C_ | GUI & Persistence |
+| _Huzaifa Ahadi_ | Networking & Concurrency |
+| _Abdur Rehman_ | Game Engine & Cards/Factions |
+| _Saad Ahmed_ | GUI & Persistence |
 
 ## Testing (TDD Workflow)
 
