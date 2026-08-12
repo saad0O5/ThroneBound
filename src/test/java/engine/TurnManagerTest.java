@@ -1,5 +1,6 @@
 package engine;
 
+import network.GameServer;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,5 +23,11 @@ class TurnManagerTest {
         TurnManager manager = new TurnManager(new StandardWinCondition());
         manager.nextTurn(state);
         assertEquals(Player.PLAYER2, state.getCurrentTurn());
+    }
+
+    @Test
+    void gameServerUsesTimedWinConditionByDefault() {
+        GameServer server = new GameServer(0);
+        assertTrue(server.getTurnManager().getWinCondition() instanceof TimedWinCondition);
     }
 }

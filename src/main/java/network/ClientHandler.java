@@ -106,7 +106,7 @@ public class ClientHandler implements Runnable {
                 sendError("Not your turn");
                 return;
             }
-            gameState.endTurn();
+            server.getTurnManager().nextTurn(gameState);
         } else {
             if (message instanceof SetupMessage setup) {
                 server.recordPlayerSetup(sender, setup.getFactionName(), setup.getDeckCardNames());

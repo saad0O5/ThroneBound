@@ -38,7 +38,7 @@ public class GameServer {
         this.port = port;
         this.clients = new CopyOnWriteArrayList<>();
         this.gameState = gameState;
-        this.turnManager = new engine.TurnManager(new engine.StandardWinCondition());
+        this.turnManager = new engine.TurnManager(new engine.TimedWinCondition());
     }
 
     public boolean hasLocalHost() { return hasLocalHost; }

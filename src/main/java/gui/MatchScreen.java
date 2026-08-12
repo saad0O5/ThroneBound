@@ -3,9 +3,11 @@ package gui;
 import cards.Card;
 import cards.Deck;
 import engine.GameState;
+import engine.MatchResult;
 import engine.Player;
 import engine.ResourcePool;
-import engine.StandardWinCondition;
+import engine.TimedWinCondition;
+import engine.TurnManager;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -65,10 +67,13 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         if (app.getActiveServer() != null) {
             this.gameState = app.getActiveServer().getGameState();
             app.setActiveGameState(this.gameState);
+            this.localPlayer = Player.PLAYER1;
         } else if (app.getActiveGameState() != null && this.gameClient == null) {
             this.gameState = app.getActiveGameState();
+            this.localPlayer = Player.PLAYER1;
         } else {
             this.gameState = new GameState();
+            this.localPlayer = Player.PLAYER1;
         }
         this.hand = new ArrayList<>(deck.getCards().subList(0, Math.min(5, deck.getCards().size())));
         if (this.gameClient != null) {
@@ -133,9 +138,16 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     public void onStateChanged(GameState state) {
         Platform.runLater(() -> {
             renderBoard(state);
-            if (new StandardWinCondition().checkWin(state)) {
-                boolean localWon = state.getPlayer1Life() > 0 && state.getPlayer2Life() <= 0;
-                app.showResults(profile, localWon);
+            TurnManager turnManager = app.getActiveServer() != null
+                    ? app.getActiveServer().getTurnManager()
+                    : new TurnManager(new TimedWinCondition());
+            if (turnManager.checkWinCondition(state)) {
+                MatchResult result = turnManager.determineWinner(state);
+                boolean localWon = (localPlayer == Player.PLAYER1 && result == MatchResult.PLAYER1)
+                        || (localPlayer == Player.PLAYER2 && result == MatchResult.PLAYER2);
+                if (result != MatchResult.ONGOING) {
+                    app.showResults(profile, localWon);
+                }
             }
         });
     }
@@ -186,13 +198,17 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         selectedCardLabel.getStyleClass().add("info-label");
         Label headerSubtitle = new Label("Match board — choose your cards and dominate the lanes");
         headerSubtitle.getStyleClass().add("subtitle-label");
+        Label rulesLabel = new Label("Goal: reduce the enemy to 0 life. End turn to pass. Match ends at 30 turns or when someone hits 0 life.");
+        rulesLabel.setWrapText(true);
+        rulesLabel.setMaxWidth(980);
+        rulesLabel.getStyleClass().add("info-label");
         lifeLabel.getStyleClass().add("info-label");
         updateLifeLabel(gameState);
 
         HBox statusRow = new HBox(12, selectedCardLabel, lifeLabel);
         statusRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox panel = new VBox(10, topRow, headerSubtitle, statusRow);
+        VBox panel = new VBox(10, topRow, headerSubtitle, rulesLabel, statusRow);
         panel.getStyleClass().addAll("panel", "top-panel");
         panel.setPadding(new Insets(12));
         AnchorPane.setTopAnchor(panel, 0.0);
@@ -304,8 +320,11 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         String label = playerSide ? "Play Here" : "Inspect";
         Button button = new Button(label);
         button.getStyleClass().add("lane-action");
-        boolean validTarget = selectedCard != null && ((selectedCard.isCreature() && playerSide && occupant == null)
-                || (selectedCard.isSpell() && !playerSide && occupant != null));
+        boolean isLocalTurn = isLocalTurn();
+        boolean validTarget = selectedCard != null
+                && isLocalTurn
+                && ((selectedCard.isCreature() && playerSide && occupant == null)
+                    || (selectedCard.isSpell() && !playerSide && occupant != null));
         button.setDisable(!validTarget);
         if (validTarget) {
             button.getStyleClass().add("lane-targetable");
@@ -364,6 +383,10 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         opponentRow.getChildren().clear();
         playerRow.getChildren().clear();
 
+        if (!isLocalTurn() && selectedCard != null) {
+            clearSelection();
+        }
+
         Player me = localPlayer != null ? localPlayer : Player.PLAYER1;
         Player opponent = (me == Player.PLAYER1) ? Player.PLAYER2 : Player.PLAYER1;
 
@@ -402,7 +425,19 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
         return pane;
     }
 
+    private Player getLocalTurnOwner() {
+        return localPlayer != null ? localPlayer : Player.PLAYER1;
+    }
+
+    private boolean isLocalTurn() {
+        return gameState.getCurrentTurn() == getLocalTurnOwner();
+    }
+
     private void selectCard(Card card, Button button) {
+        if (!isLocalTurn()) {
+            statusLabel.setText("Not your turn yet.");
+            return;
+        }
         if (button.isDisable()) {
             statusLabel.setText("You cannot play that card right now.");
             return;
@@ -421,12 +456,12 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     }
 
     private void playSelectedCard(int laneIndex) {
-        if (selectedCard == null) {
-            statusLabel.setText("Select a card from your hand first.");
+        if (!isLocalTurn()) {
+            statusLabel.setText("Not your turn yet.");
             return;
         }
-        if (gameClient != null && localPlayer != null && gameState.getCurrentTurn() != localPlayer) {
-            statusLabel.setText("Not your turn yet.");
+        if (selectedCard == null) {
+            statusLabel.setText("Select a card from your hand first.");
             return;
         }
         try {
@@ -454,7 +489,7 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
     }
 
     private void endTurn() {
-        if (gameClient != null && localPlayer != null && gameState.getCurrentTurn() != localPlayer) {
+        if (!isLocalTurn()) {
             statusLabel.setText("Not your turn yet.");
             return;
         }
@@ -465,7 +500,10 @@ public class MatchScreen extends AnchorPane implements GameStateObserver {
             gameClient.sendMessage(new EndTurnMessage());
             statusLabel.setText("End-turn request sent.");
         } else {
-            gameState.endTurn();
+            TurnManager turnManager = app.getActiveServer() != null
+                    ? app.getActiveServer().getTurnManager()
+                    : new TurnManager(new TimedWinCondition());
+            turnManager.nextTurn(gameState);
             if (app.getActiveServer() != null) {
                 network.GameStateSnapshot snapshot = network.GameStateSnapshot.fromGameState(gameState);
                 app.getActiveServer().broadcast(new network.StateUpdateMessage(snapshot));

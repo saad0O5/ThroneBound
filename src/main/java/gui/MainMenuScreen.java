@@ -62,7 +62,7 @@ public class MainMenuScreen extends AnchorPane {
 
         Label instructionHeader = new Label("How to Play");
         instructionHeader.getStyleClass().add("subtitle-label");
-        Label instructions = new Label("Build a deck of 12 cards, then play creatures and spells in lanes.\nDestroy opponent creatures or reduce their life to 0 to win.");
+        Label instructions = new Label("Build a deck of 12 cards, then play creatures and spells in lanes.\nGoal: reduce the enemy life to 0. If no one reaches 0, the match ends after 30 turns by higher life total.\nEnd your turn to pass; use your resources carefully and always check the board before acting.");
         instructions.setWrapText(true);
         instructions.setMaxWidth(520);
         instructions.getStyleClass().add("info-label");
